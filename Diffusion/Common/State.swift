@@ -16,7 +16,7 @@ let DEFAULT_PROMPT = "Labrador in the style of Vermeer"
 
 enum GenerationState {
     case startup
-    case running(StableDiffusionProgress?)
+    case running
     case complete(String, CGImage?, UInt32, TimeInterval?)
     case userCanceled
     case failed(Error)
@@ -44,16 +44,16 @@ class GenerationContext: ObservableObject {
 
     @Published var pipeline: Pipeline? = nil {
         didSet {
-            if let pipeline = pipeline {
-                progressSubscriber = pipeline
-                    .progressPublisher
-                    .receive(on: DispatchQueue.main)
-                    .sink { progress in
-                        guard let progress = progress else { return }
-                        self.updatePreviewIfNeeded(progress)
-                        self.state = .running(progress)
-                    }
-            }
+//            if let pipeline = pipeline {
+//                progressSubscriber = pipeline
+//                    .progressPublisher
+//                    .receive(on: DispatchQueue.main)
+//                    .sink { progress in
+//                        guard let progress = progress else { return }
+//                        self.updatePreviewIfNeeded(progress)
+//                        self.state = .running(progress)
+//                    }
+//            }
         }
     }
     @Published var state: GenerationState = .startup
@@ -62,7 +62,7 @@ class GenerationContext: ObservableObject {
     @Published var negativePrompt = ""
     
     // FIXME: Double to support the slider component
-    @Published var steps = 25.0
+    @Published var steps = 1.0
     @Published var numImages = 1.0
     @Published var seed: UInt32 = 0
     @Published var guidanceScale = 7.5
@@ -74,27 +74,23 @@ class GenerationContext: ObservableObject {
 
     private var progressSubscriber: Cancellable?
 
-    private func updatePreviewIfNeeded(_ progress: StableDiffusionProgress) {
-        if previews == 0 || progress.step == 0 {
-            previewImage = nil
-        }
-
-        if previews > 0, let newImage = progress.currentImages.first, newImage != nil {
-            previewImage = newImage
-        }
-    }
+    private func updatePreviewIfNeeded() { }
+//    private func updatePreviewIfNeeded(_ progress: StableDiffusionProgress) {
+//        if previews == 0 || progress.step == 0 {
+//            previewImage = nil
+//        }
+//
+//        if previews > 0, let newImage = progress.currentImages.first, newImage != nil {
+//            previewImage = newImage
+//        }
+//    }
 
     func generate() async throws -> GenerationResult {
         guard let pipeline = pipeline else { throw "No pipeline" }
         return try pipeline.generate(
             prompt: positivePrompt,
-            negativePrompt: negativePrompt,
-            scheduler: scheduler,
             numInferenceSteps: Int(steps),
             seed: seed,
-            numPreviews: Int(previews),
-            guidanceScale: Float(guidanceScale),
-            disableSafety: disableSafety
         )
     }
     

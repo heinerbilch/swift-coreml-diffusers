@@ -45,17 +45,14 @@ struct LoadingView: View {
         .environmentObject(generation)
         .onAppear {
             Task.init {
-                let loader = PipelineLoader(model: iosModel())
+                let loader = PipelineLoader()
                 stateSubscriber = loader.statePublisher.sink { state in
                     DispatchQueue.main.async {
                         switch state {
                         case .downloading(let progress):
                             preparationPhase = "Downloading"
                             downloadProgress = progress
-                        case .uncompressing:
-                            preparationPhase = "Uncompressing"
-                            downloadProgress = 1
-                        case .readyOnDisk:
+                        case .downloaded:
                             preparationPhase = "Loading"
                             downloadProgress = 1
                         default:

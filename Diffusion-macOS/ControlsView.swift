@@ -13,7 +13,6 @@ import CompactSlider
 /// Track a StableDiffusion Pipeline's readiness. This include actively downloading from the internet, uncompressing the downloaded zip file, actively loading into memory, ready to use or an Error state.
 enum PipelineState {
     case downloading(Double)
-    case uncompressing
     case loading
     case ready
     case failed(Error)
@@ -84,9 +83,10 @@ struct ControlsView: View {
     
     var modelFilename: String? {
         guard let pipelineLoader = pipelineLoader else { return nil }
-        let selectedURL = pipelineLoader.compiledURL
-        guard FileManager.default.fileExists(atPath: selectedURL.path) else { return nil }
-        return selectedURL.path
+        return "sdxl-turbo"
+//        let selectedURL = pipelineLoader.compiledURL
+//        guard FileManager.default.fileExists(atPath: selectedURL.path) else { return nil }
+//        return selectedURL.path
     }
     
     fileprivate func updateSafetyCheckerState() {
@@ -102,27 +102,21 @@ struct ControlsView: View {
         generation.computeUnits = Settings.shared.userSelectedComputeUnits ?? ModelInfo.defaultComputeUnits
     }
 
+    // TODO: remove all this
     fileprivate func modelDidChange(model: ModelInfo) {
-        guard pipelineLoader?.model != model || pipelineLoader?.computeUnits != generation.computeUnits else {
-            print("Reusing same model \(model) with units \(generation.computeUnits)")
-            return
-        }
-
         Settings.shared.currentModel = model
 
         pipelineLoader?.cancel()
         pipelineState = .downloading(0)
         Task.init {
-            let loader = PipelineLoader(model: model, computeUnits: generation.computeUnits, maxSeed: maxSeed)
+            let loader = PipelineLoader(maxSeed: maxSeed)
             self.pipelineLoader = loader
             stateSubscriber = loader.statePublisher.sink { state in
                 DispatchQueue.main.async {
                     switch state {
                     case .downloading(let progress):
                         pipelineState = .downloading(progress)
-                    case .uncompressing:
-                        pipelineState = .uncompressing
-                    case .readyOnDisk:
+                    case .downloaded:
                         pipelineState = .loading
                     case .failed(let error):
                         pipelineState = .failed(error)
@@ -133,6 +127,7 @@ struct ControlsView: View {
             }
             do {
                 generation.pipeline = try await loader.prepare()
+//                try await loader.prepare()
                 pipelineState = .ready
             } catch {
                 print("Could not load model, error: \(error)")
@@ -142,7 +137,7 @@ struct ControlsView: View {
     }
     
     fileprivate func isModelDownloaded(_ model: ModelInfo, computeUnits: ComputeUnits? = nil) -> Bool {
-        PipelineLoader(model: model, computeUnits: computeUnits ?? generation.computeUnits).ready
+        PipelineLoader().ready
     }
     
     fileprivate func modelLabel(_ model: ModelInfo) -> Text {
@@ -181,16 +176,6 @@ struct ControlsView: View {
                                 modelLabel($0)
                             }
                             Text("Reveal in Finder…").tag(revealOption)
-                        }
-                        .onChange(of: model) { selection in
-                            guard selection != revealOption else {
-                                // The reveal option has been requested - open the models folder in Finder
-                                NSWorkspace.shared.selectFile(modelFilename, inFileViewerRootedAtPath: PipelineLoader.models.path)
-                                model = Settings.shared.currentModel.modelVersion
-                                return
-                            }
-                            guard let model = ModelInfo.from(modelVersion: selection) else { return }
-                            modelDidChange(model: model)
                         }
                     } label: {
                         HStack {

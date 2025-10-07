@@ -7,35 +7,36 @@
 //
 
 
-import CoreML
 import Combine
-
-import ZIPFoundation
-import StableDiffusion
+import Foundation
+import CandleSDXL
+import Hub
 
 class PipelineLoader {
-    static let models = Settings.shared.applicationSupportURL().appendingPathComponent("hf-diffusion-models")
-    let model: ModelInfo
-    let computeUnits: ComputeUnits
     let maxSeed: UInt32
     
     private var downloadSubscriber: Cancellable?
+    private let downloadProgress = PassthroughSubject<Double, Never>()
 
-    init(model: ModelInfo, computeUnits: ComputeUnits? = nil, maxSeed: UInt32 = UInt32.max) {
-        self.model = model
-        self.computeUnits = computeUnits ?? model.defaultComputeUnits
+    var snapshotURL: URL? = nil
+
+    init(maxSeed: UInt32 = UInt32.max) {
         self.maxSeed = maxSeed
         state = .undetermined
         setInitialState()
+
+        downloadSubscriber = downloadProgress
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] progress in
+                self?.state = .downloading(progress)
+            }
     }
-        
+
     enum PipelinePreparationPhase {
         case undetermined
         case waitingToDownload
         case downloading(Double)
         case downloaded
-        case uncompressing
-        case readyOnDisk
         case loaded
         case failed(Error)
     }
@@ -46,11 +47,10 @@ class PipelineLoader {
         }
     }
     private(set) lazy var statePublisher: CurrentValueSubject<PipelinePreparationPhase, Never> = CurrentValueSubject(state)
-    private(set) var downloader: Downloader? = nil
 
     func setInitialState() {
         if ready {
-            state = .readyOnDisk
+            state = .downloaded
             return
         }
         if downloaded {
@@ -62,70 +62,26 @@ class PipelineLoader {
 }
 
 extension PipelineLoader {
-    // Unused. Kept for debugging purposes. --pcuenca
-    static func removeAll() {
-        // Delete the parent models folder as it will be recreated when it's needed again
-        do {
-            try FileManager.default.removeItem(at: models)
-        } catch {
-            print("Failed to delete: \(models), error: \(error.localizedDescription)")
-        }
-    }
-}
-
-
-extension PipelineLoader {
-    func cancel() { downloader?.cancel() }
+    // TODO: do something
+    func cancel() { }
 }
 
 extension PipelineLoader {
-    var url: URL {
-        return model.modelURL(for: variant)
-    }
-    
-    var filename: String {
-        return url.lastPathComponent
-    }
-    
-    var downloadedURL: URL { PipelineLoader.models.appendingPathComponent(filename) }
-
-    var uncompressURL: URL { PipelineLoader.models }
-    
-    var packagesFilename: String { (filename as NSString).deletingPathExtension }
-    
-    var compiledURL: URL { downloadedURL.deletingLastPathComponent().appendingPathComponent(packagesFilename)  }
-
     var downloaded: Bool {
-        return FileManager.default.fileExists(atPath: downloadedURL.path)
+        guard let snapshotURL = snapshotURL else { return false }
+        return FileManager.default.fileExists(atPath: snapshotURL.path)
     }
     
-    var ready: Bool {
-        return FileManager.default.fileExists(atPath: compiledURL.path)
-    }
-    
-    var variant: AttentionVariant {
-        switch computeUnits {
-        case .cpuOnly           : return .original          // Not supported yet
-        case .cpuAndGPU         : return .original
-        case .cpuAndNeuralEngine: return model.supportsAttentionV2 ? .splitEinsumV2 : .splitEinsum
-        case .all               : return .splitEinsum
-        @unknown default:
-            fatalError("Unknown MLComputeUnits")
-        }
-    }
-    
+    var ready: Bool { downloaded }
+
     func prepare() async throws -> Pipeline {
         do {
-            do {
-                try FileManager.default.createDirectory(atPath: PipelineLoader.models.path, withIntermediateDirectories: true, attributes: nil)
-            } catch {
-                print("Error creating PipelineLoader.models path: \(error)")
-            }
-
             try await download()
-            try await unzip()
-            let pipeline = try await load(url: compiledURL)
-            return Pipeline(pipeline, maxSeed: maxSeed)
+            guard let snapshotURL = snapshotURL else {
+                fatalError("Download failed")
+            }
+            try await load(url: snapshotURL)
+            return Pipeline(maxSeed: maxSeed)
         } catch {
             state = .failed(error)
             throw error
@@ -134,56 +90,43 @@ extension PipelineLoader {
     
     @discardableResult
     func download() async throws -> URL {
-        if ready || downloaded { return downloadedURL }
-        
-        let downloader = Downloader(from: url, to: downloadedURL)
-        self.downloader = downloader
-        downloadSubscriber = downloader.downloadState.sink { state in
-            if case .downloading(let progress) = state {
-                self.state = .downloading(progress)
+        // TODO: download model from stabilityai/sdxl-turbo, and download separately 2 x tokenizer.json from openai/clip-vit-large-patch14 and laion/CLIP-ViT-bigG-14-laion2B-39B-b160k
+        // as well as the fp16-fixed vae from https://huggingface.co/madebyollin/sdxl-vae-fp16-fix/tree/main
+        let downloadedTo = try await Hub.snapshot(from: "pcuenq/sdxl-turbo", matching: ["*.fp16.safetensors", "*.json"]) { progress in
+            print(progress.fractionCompleted)
+            self.downloadProgress.send(progress.fractionCompleted)
+            if progress.fractionCompleted >= 1.0 {
+                self.downloadProgress.send(completion: .finished)
             }
         }
-        try downloader.waitUntilDone()
-        return downloadedURL
+        print("Downloaded to \(downloadedTo)")
+        snapshotURL = downloadedTo
+        state = .downloaded
+        return downloadedTo
     }
-    
-    func unzip() async throws {
-        guard downloaded else { return }
-        state = .uncompressing
-        do {
-            try FileManager().unzipItem(at: downloadedURL, to: uncompressURL)
-        } catch {
-            // Cleanup if error occurs while unzipping
-            try FileManager.default.removeItem(at: uncompressURL)
-            throw error
+
+    // TODO: don't we have anything to capture state / instantiation?
+    // return it when we do
+    func load(url: URL) async throws {
+        guard let snapshotURL = snapshotURL else {
+            throw "Model not downloaded"
         }
-        try FileManager.default.removeItem(at: downloadedURL)
-        state = .readyOnDisk
-    }
-    
-    func load(url: URL) async throws -> StableDiffusionPipelineProtocol {
         let beginDate = Date()
-        let configuration = MLModelConfiguration()
-        configuration.computeUnits = computeUnits
-        let pipeline: StableDiffusionPipelineProtocol
-        if model.isXL {
-            if #available(macOS 14.0, iOS 17.0, *) {
-                pipeline = try StableDiffusionXLPipeline(resourcesAt: url,
-                                                       configuration: configuration,
-                                                       reduceMemory: model.reduceMemory)
-            } else {
-                throw "Stable Diffusion XL requires macOS 14"
-            }
-        } else {
-            pipeline = try StableDiffusionPipeline(resourcesAt: url,
-                                                       controlNet: [],
-                                                       configuration: configuration,
-                                                       disableSafety: false,
-                                                       reduceMemory: model.reduceMemory)
+
+        // TODO: improve these symbols / API
+        // Ensure we pass a stable UnsafePointer<CChar> to the C API
+        let initStatus: candle_sdxlCandleSdxlStatusCode = snapshotURL.path.withCString { cPath in
+            var options = candle_sdxlCandleSdxlInitOptions(asset_dir: cPath, use_metal: 1)
+            return candle_sdxl_init(&options)
         }
-        try pipeline.loadResources()
+
+        guard initStatus == Ok else {
+            fatalError("Candle SDXL initialization error")
+        }
+
         print("Pipeline loaded in \(Date().timeIntervalSince(beginDate))")
         state = .loaded
-        return pipeline
+//        return pipeline
     }
 }
+

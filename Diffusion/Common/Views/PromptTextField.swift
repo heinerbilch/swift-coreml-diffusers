@@ -27,14 +27,15 @@ struct PromptTextField: View {
     private var modelInfo: ModelInfo? {
         ModelInfo.from(modelVersion: $model.wrappedValue)
     }
-    
+
+    // TODO: remove modelInfo completely
     private var pipelineLoader: PipelineLoader? {
         guard let modelInfo = modelInfo else { return nil }
-        return PipelineLoader(model: modelInfo)
+        return PipelineLoader()
     }
 
     private var compiledURL: URL? {
-        return pipelineLoader?.compiledURL
+        return pipelineLoader?.snapshotURL
     }
     
     private var textColor: Color {

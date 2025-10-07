@@ -17,7 +17,7 @@ struct StatusView: View {
     func submit() {
         if case .running = generation.state { return }
         Task {
-            generation.state = .running(nil)
+            generation.state = .running
             do {
                 let result = try await generation.generate()
                 if result.userCanceled {
@@ -61,20 +61,24 @@ struct StatusView: View {
     func generationStatusView() -> any View {
         switch generation.state {
         case .startup: return EmptyView()
-        case .running(let progress):
-            guard let progress = progress, progress.stepCount > 0 else {
-                // The first time it takes a little bit before generation starts
+        case .running:
                 return HStack {
                     Text("Preparing model…")
                     Spacer()
                 }
-            }
-            let step = Int(progress.step) + 1
-            let fraction = Double(step) / Double(progress.stepCount)
-            return HStack {
-                Text("Generating \(Int(round(100*fraction)))%")
-                Spacer()
-            }
+//            guard let progress = progress, progress.stepCount > 0 else {
+//                // The first time it takes a little bit before generation starts
+//                return HStack {
+//                    Text("Preparing model…")
+//                    Spacer()
+//                }
+//            }
+//            let step = Int(progress.step) + 1
+//            let fraction = Double(step) / Double(progress.stepCount)
+//            return HStack {
+//                Text("Generating \(Int(round(100*fraction)))%")
+//                Spacer()
+//            }
         case .complete(_, let image, let lastSeed, let interval):
             guard let _ = image else {
                 return HStack {
@@ -109,8 +113,6 @@ struct StatusView: View {
         switch pipelineState.wrappedValue {
         case .downloading(let progress):
             ProgressView("Downloading…", value: progress*100, total: 110).padding()
-        case .uncompressing:
-            ProgressView("Uncompressing…", value: 100, total: 110).padding()
         case .loading:
             ProgressView("Loading…", value: 105, total: 110).padding()
         case .ready:

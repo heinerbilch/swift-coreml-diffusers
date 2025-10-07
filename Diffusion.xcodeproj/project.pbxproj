@@ -22,6 +22,12 @@
 		EBB5BA5329425BEE003A2A5B /* PipelineLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBB5BA5229425BEE003A2A5B /* PipelineLoader.swift */; };
 		EBB5BA5A29426E06003A2A5B /* Downloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBB5BA5929426E06003A2A5B /* Downloader.swift */; };
 		EBB5BA5D294504DE003A2A5B /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = EBB5BA5C294504DE003A2A5B /* ZIPFoundation */; };
+		EBD331B52E95088100823F2E /* Hub in Frameworks */ = {isa = PBXBuildFile; productRef = EBD331B42E95088100823F2E /* Hub */; };
+		EBD331B72E95089E00823F2E /* Hub in Frameworks */ = {isa = PBXBuildFile; productRef = EBD331B62E95089E00823F2E /* Hub */; };
+		EBD331B92E95246F00823F2E /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EBD331B82E95246F00823F2E /* Metal.framework */; };
+		EBD331BB2E9527EB00823F2E /* CandleSDXL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = EBD331BA2E9527EB00823F2E /* CandleSDXL.xcframework */; };
+		EBD331BC2E9527EB00823F2E /* CandleSDXL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = EBD331BA2E9527EB00823F2E /* CandleSDXL.xcframework */; };
+		EBD331BD2E9548F700823F2E /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EBD331B82E95246F00823F2E /* Metal.framework */; };
 		EBDD7DAA29731F6C00C1C4B2 /* Pipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBE75601293E91E200806B32 /* Pipeline.swift */; };
 		EBDD7DAB29731F7500C1C4B2 /* PipelineLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBB5BA5229425BEE003A2A5B /* PipelineLoader.swift */; };
 		EBDD7DAF29731FB300C1C4B2 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = EBDD7DAE29731FB300C1C4B2 /* ZIPFoundation */; };
@@ -81,6 +87,8 @@
 		EB560F0529A4090D00C0F8B8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		EBB5BA5229425BEE003A2A5B /* PipelineLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineLoader.swift; sourceTree = "<group>"; };
 		EBB5BA5929426E06003A2A5B /* Downloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Downloader.swift; sourceTree = "<group>"; };
+		EBD331B82E95246F00823F2E /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		EBD331BA2E9527EB00823F2E /* CandleSDXL.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = CandleSDXL.xcframework; sourceTree = "<group>"; };
 		EBDD7DB22973200200C1C4B2 /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
 		EBDD7DB72976AAFE00C1C4B2 /* State.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = State.swift; sourceTree = "<group>"; };
 		EBDD7DBA2976F03600C1C4B2 /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = config/debug.xcconfig; sourceTree = "<group>"; };
@@ -116,8 +124,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EBD331BD2E9548F700823F2E /* Metal.framework in Frameworks */,
 				EB25B3D62A3A2DC4000E25A1 /* StableDiffusion in Frameworks */,
 				EBB5BA5D294504DE003A2A5B /* ZIPFoundation in Frameworks */,
+				EBD331B72E95089E00823F2E /* Hub in Frameworks */,
+				EBD331BB2E9527EB00823F2E /* CandleSDXL.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -139,9 +150,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EBD331B92E95246F00823F2E /* Metal.framework in Frameworks */,
 				F155203C297118E700DC009B /* CompactSlider in Frameworks */,
+				EBD331B52E95088100823F2E /* Hub in Frameworks */,
 				EB25B3D82A3A2DD5000E25A1 /* StableDiffusion in Frameworks */,
 				EBDD7DAF29731FB300C1C4B2 /* ZIPFoundation in Frameworks */,
+				EBD331BC2E9527EB00823F2E /* CandleSDXL.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -195,6 +209,7 @@
 				EBE755E3293E37DE00806B32 /* DiffusionUITests */,
 				EBE755C6293E37DD00806B32 /* Products */,
 				EBE75603293E93BB00806B32 /* Frameworks */,
+				EBD331BA2E9527EB00823F2E /* CandleSDXL.xcframework */,
 			);
 			sourceTree = "<group>";
 		};
@@ -259,6 +274,7 @@
 		EBE75603293E93BB00806B32 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				EBD331B82E95246F00823F2E /* Metal.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -319,6 +335,7 @@
 			packageProductDependencies = (
 				EBB5BA5C294504DE003A2A5B /* ZIPFoundation */,
 				EB25B3D52A3A2DC4000E25A1 /* StableDiffusion */,
+				EBD331B62E95089E00823F2E /* Hub */,
 			);
 			productName = Diffusion;
 			productReference = EBE755C5293E37DD00806B32 /* Diffusion.app */;
@@ -379,6 +396,7 @@
 				F155203B297118E700DC009B /* CompactSlider */,
 				EBDD7DAE29731FB300C1C4B2 /* ZIPFoundation */,
 				EB25B3D72A3A2DD5000E25A1 /* StableDiffusion */,
+				EBD331B42E95088100823F2E /* Hub */,
 			);
 			productName = "Diffusion-macOS";
 			productReference = F15520212971093300DC009B /* Diffusers.app */;
@@ -423,6 +441,7 @@
 				EBB5BA5B294504DE003A2A5B /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 				F155203A297118E600DC009B /* XCRemoteSwiftPackageReference "CompactSlider" */,
 				EB25B3D42A3A2DC4000E25A1 /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */,
+				EBD331B32E95088100823F2E /* XCRemoteSwiftPackageReference "swift-transformers" */,
 			);
 			productRefGroup = EBE755C6293E37DD00806B32 /* Products */;
 			projectDirPath = "";
@@ -979,6 +998,14 @@
 				minimumVersion = 0.9.9;
 			};
 		};
+		EBD331B32E95088100823F2E /* XCRemoteSwiftPackageReference "swift-transformers" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/huggingface/swift-transformers.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.1;
+			};
+		};
 		F155203A297118E600DC009B /* XCRemoteSwiftPackageReference "CompactSlider" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/buh/CompactSlider.git";
@@ -1008,6 +1035,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = EBB5BA5B294504DE003A2A5B /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
 			productName = ZIPFoundation;
+		};
+		EBD331B42E95088100823F2E /* Hub */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EBD331B32E95088100823F2E /* XCRemoteSwiftPackageReference "swift-transformers" */;
+			productName = Hub;
+		};
+		EBD331B62E95089E00823F2E /* Hub */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EBD331B32E95088100823F2E /* XCRemoteSwiftPackageReference "swift-transformers" */;
+			productName = Hub;
 		};
 		EBDD7DAE29731FB300C1C4B2 /* ZIPFoundation */ = {
 			isa = XCSwiftPackageProductDependency;
