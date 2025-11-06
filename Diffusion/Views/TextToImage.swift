@@ -8,7 +8,6 @@
 
 import SwiftUI
 import Combine
-import StableDiffusion
 
 
 /// Presents "Share" + "Save" buttons on Mac; just "Share" on iOS/iPadOS.

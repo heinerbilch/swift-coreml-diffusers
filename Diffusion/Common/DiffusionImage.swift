@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import StableDiffusion
 import CoreTransferable
 
 /// Tracking for a `DiffusionImage` generation state.
@@ -38,8 +37,6 @@ final class DiffusionImage: NSObject, Identifiable, NSCoding, NSSecureCoding {
     let negativePrompt: String
     let guidanceScale: Double
     let disableSafety: Bool
-    /// Local enum represented with a String to conform to NSSecureCoding
-    let scheduler: StableDiffusionScheduler
 
     /// This is a composed `String` built from the numeric `Seed` and the user supplied `positivePrompt` limited to the first 200 character and with whitespace replaced with underscore characters.
     var generatedFilename: String {
@@ -49,7 +46,7 @@ final class DiffusionImage: NSObject, Identifiable, NSCoding, NSSecureCoding {
     /// The location on the file system where this generated image is stored.
     var fileURL: URL
 
-    init(id: UUID, cgImage: CGImage, seed: UInt32, steps: Double, positivePrompt: String, negativePrompt: String, guidanceScale: Double, disableSafety: Bool, scheduler: StableDiffusionScheduler) {
+    init(id: UUID, cgImage: CGImage, seed: UInt32, steps: Double, positivePrompt: String, negativePrompt: String, guidanceScale: Double, disableSafety: Bool) {
         let genname = "\(seed)-\(positivePrompt)".first200Safe
         self.id = id
         self.cgImage = cgImage
@@ -59,7 +56,6 @@ final class DiffusionImage: NSObject, Identifiable, NSCoding, NSSecureCoding {
         self.negativePrompt = negativePrompt
         self.guidanceScale = guidanceScale
         self.disableSafety = disableSafety
-        self.scheduler = scheduler
         // Initially set the fileURL to the top level applicationDirectory to allow running the completed instance func save() where the fileURL will be updated to the correct location.
         self.fileURL = URL.applicationDirectory
         // init the instance fully before executing an instance function
@@ -79,7 +75,6 @@ final class DiffusionImage: NSObject, Identifiable, NSCoding, NSSecureCoding {
         coder.encode(negativePrompt, forKey: "negativePrompt")
         coder.encode(guidanceScale, forKey: "guidanceScale")
         coder.encode(disableSafety, forKey: "disableSafety")
-        coder.encode(scheduler, forKey: "scheduler")
         // Encode cgImage as data
         if let data = pngRepresentation() {
             coder.encode(data, forKey: "cgImage")
@@ -98,7 +93,6 @@ final class DiffusionImage: NSObject, Identifiable, NSCoding, NSSecureCoding {
         self.negativePrompt = coder.decodeObject(forKey: "negativePrompt") as? String ?? ""
         self.guidanceScale = coder.decodeDouble(forKey: "guidanceScale")
         self.disableSafety = coder.decodeBool(forKey: "disableSafety")
-        self.scheduler = coder.decodeObject(forKey: "scheduler") as? StableDiffusionScheduler ?? StableDiffusionScheduler.dpmSolverMultistepScheduler
         let genname = "\(seed)-\(positivePrompt)".first200Safe
         
         // Decode cgImage from data

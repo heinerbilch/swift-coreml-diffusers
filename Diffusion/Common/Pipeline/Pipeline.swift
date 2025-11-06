@@ -8,7 +8,7 @@
 
 import Foundation
 import Combine
-import CandleSDXL
+import CandleSD15Bridge
 import CoreGraphics
 
 //struct StableDiffusionProgress {
@@ -59,7 +59,7 @@ class Pipeline {
     }
 
 
-    func debugPrintImageStats(_ image: candle_sdxlCandleSdxlImage) {
+    func debugPrintImageStats(_ image: CandleSdImage) {
         guard let base = image.data else {
             print("Image buffer pointer was nil.")
             return
@@ -88,7 +88,7 @@ class Pipeline {
         """)
     }
 
-    func makeCGImage(from image: inout candle_sdxlCandleSdxlImage) -> CGImage? {
+    func makeCGImage(from image: inout CandleSdImage) -> CGImage? {
         // Expect Candle to return 8‑bit RGBA.
         guard image.channels == 4, let baseAddress = image.data else { return nil }
 
@@ -102,7 +102,7 @@ class Pipeline {
 
         let buffer = UnsafeBufferPointer(start: baseAddress, count: byteCount)
         let pixelData = Data(buffer: buffer)
-        candle_sdxl_free_image(&image)
+        candle_sd_free_image(&image)
 
         let bitmapInfo = CGBitmapInfo([
             .byteOrder32Big,
@@ -126,27 +126,28 @@ class Pipeline {
 
     func generate(
         prompt: String,
-        numInferenceSteps stepCount: Int = 1,
+        numInferenceSteps stepCount: Int = 25,
         seed: UInt32 = 0,
     ) throws -> GenerationResult {
         canceled = false
         let theSeed = seed > 0 ? seed : UInt32.random(in: 1...maxSeed)
 
         // TODO: improve these symbols / API
-        var image = candle_sdxlCandleSdxlImage()
-        let status: candle_sdxlCandleSdxlStatusCode = prompt.withCString { promptCString in
-            var request = candle_sdxlCandleSdxlRequest(
+        var image = CandleSdImage()
+        let status: CandleSdStatusCode = prompt.withCString { promptCString in
+            var request = CandleSdRequest(
                 prompt: promptCString,
+                negative_prompt: nil,
                 steps: UInt32(stepCount),
-                seed: UInt64(theSeed),
+                seed: 1337, //UInt64(theSeed),
                 use_seed: 1
             )
-            let s = candle_sdxl_generate(&request, &image)
+            let s = candle_sd_generate(&request, &image)
             return s
         }
 
         guard status == Ok else {
-            let lastError = String(cString: candle_sdxl_last_error())
+            let lastError = String(cString: candle_sd_last_error())
             print("Candle error: \(lastError))")
             fatalError("Generation error")
         }

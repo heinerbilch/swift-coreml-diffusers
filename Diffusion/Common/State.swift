@@ -8,7 +8,6 @@
 
 import Combine
 import SwiftUI
-import StableDiffusion
 import CoreML
 
 let DEFAULT_MODEL = ModelInfo.v2Base
@@ -24,24 +23,7 @@ enum GenerationState {
 
 typealias ComputeUnits = MLComputeUnits
 
-/// Schedulers compatible with StableDiffusionPipeline. This is a local implementation of the StableDiffusionScheduler enum as a String represetation to allow for compliance with NSSecureCoding.
-public enum StableDiffusionScheduler: String {
-    /// Scheduler that uses a pseudo-linear multi-step (PLMS) method
-    case pndmScheduler
-    /// Scheduler that uses a second order DPM-Solver++ algorithm
-    case dpmSolverMultistepScheduler
-
-    func asStableDiffusionScheduler() -> StableDiffusion.StableDiffusionScheduler {
-        switch self {
-        case .pndmScheduler: return StableDiffusion.StableDiffusionScheduler.pndmScheduler
-        case .dpmSolverMultistepScheduler: return StableDiffusion.StableDiffusionScheduler.dpmSolverMultistepScheduler
-        }
-    }
-}
-
 class GenerationContext: ObservableObject {
-    let scheduler = StableDiffusionScheduler.dpmSolverMultistepScheduler
-
     @Published var pipeline: Pipeline? = nil {
         didSet {
 //            if let pipeline = pipeline {
@@ -62,7 +44,7 @@ class GenerationContext: ObservableObject {
     @Published var negativePrompt = ""
     
     // FIXME: Double to support the slider component
-    @Published var steps = 1.0
+    @Published var steps = 25.0
     @Published var numImages = 1.0
     @Published var seed: UInt32 = 0
     @Published var guidanceScale = 7.5

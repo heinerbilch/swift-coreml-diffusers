@@ -9,7 +9,7 @@
 
 import Combine
 import Foundation
-import CandleSDXL
+import CandleSD15Bridge
 import Hub
 
 class PipelineLoader {
@@ -87,12 +87,30 @@ extension PipelineLoader {
             throw error
         }
     }
-    
+
+    // Currently unused
     @discardableResult
-    func download() async throws -> URL {
+    func download_sdxl_turbo() async throws -> URL {
         // TODO: download model from stabilityai/sdxl-turbo, and download separately 2 x tokenizer.json from openai/clip-vit-large-patch14 and laion/CLIP-ViT-bigG-14-laion2B-39B-b160k
         // as well as the fp16-fixed vae from https://huggingface.co/madebyollin/sdxl-vae-fp16-fix/tree/main
         let downloadedTo = try await Hub.snapshot(from: "pcuenq/sdxl-turbo", matching: ["*.fp16.safetensors", "*.json"]) { progress in
+            print(progress.fractionCompleted)
+            self.downloadProgress.send(progress.fractionCompleted)
+            if progress.fractionCompleted >= 1.0 {
+                self.downloadProgress.send(completion: .finished)
+            }
+        }
+        print("Downloaded to \(downloadedTo)")
+        snapshotURL = downloadedTo
+        state = .downloaded
+        return downloadedTo
+    }
+
+    // Currently unused
+    @discardableResult
+    func download() async throws -> URL {
+        // TODO: download model from stable-diffusion-v1-5/stable-diffusion-v1-5, and download separately tokenizer.json from openai/clip-vit-base-patch32
+        let downloadedTo = try await Hub.snapshot(from: "pcuenq/stable-diffusion-v1-5", matching: ["*.fp16.safetensors", "*.json"]) { progress in
             print(progress.fractionCompleted)
             self.downloadProgress.send(progress.fractionCompleted)
             if progress.fractionCompleted >= 1.0 {
@@ -115,13 +133,15 @@ extension PipelineLoader {
 
         // TODO: improve these symbols / API
         // Ensure we pass a stable UnsafePointer<CChar> to the C API
-        let initStatus: candle_sdxlCandleSdxlStatusCode = snapshotURL.path.withCString { cPath in
-            var options = candle_sdxlCandleSdxlInitOptions(asset_dir: cPath, use_metal: 1)
-            return candle_sdxl_init(&options)
+        let initStatus: CandleSdStatusCode = snapshotURL.path.withCString { cPath in
+            var options = CandleSdInitOptions(asset_dir: cPath, use_metal: 1)
+            return candle_sd_init(&options)
         }
 
         guard initStatus == Ok else {
-            fatalError("Candle SDXL initialization error")
+            let lastError = String(cString: candle_sd_last_error())
+            print("Candle error: \(lastError))")
+            fatalError("Generation error")
         }
 
         print("Pipeline loaded in \(Date().timeIntervalSince(beginDate))")
