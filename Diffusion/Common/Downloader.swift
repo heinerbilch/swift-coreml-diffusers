@@ -8,6 +8,9 @@
 
 import Foundation
 import Combine
+import os
+
+private let logger = Logger(subsystem: "com.yourcompany.Diffusion", category: "Downloader")
 
 class Downloader: NSObject, ObservableObject {
     private(set) var destination: URL
@@ -41,10 +44,10 @@ class Downloader: NSObject, ObservableObject {
         urlSession?.getAllTasks { tasks in
             // If there's an existing pending background task with the same URL, let it proceed.
             guard tasks.filter({ $0.originalRequest?.url == url }).isEmpty else {
-                print("Already downloading \(url)")
+                logger.info("Already downloading \(url)")
                 return
             }
-            print("Starting download of \(url)")
+            logger.info("Starting download of \(url)")
             
             var request = URLRequest(url: url)
             if let authToken = authToken {
@@ -102,7 +105,7 @@ extension Downloader: URLSessionDelegate, URLSessionDownloadDelegate {
         if let error = error {
             downloadState.value = .failed(error)
         } else if let response = task.response as? HTTPURLResponse {
-            print("HTTP response status code: \(response.statusCode)")
+            logger.info("HTTP response status code: \(response.statusCode)")
 //            let headers = response.allHeaderFields
 //            print("HTTP response headers: \(headers)")
         }

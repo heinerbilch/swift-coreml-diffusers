@@ -9,9 +9,12 @@
 
 import CoreML
 import Combine
+import os
 
 import ZIPFoundation
 import StableDiffusion
+
+private let logger = Logger(subsystem: "com.yourcompany.Diffusion", category: "PipelineLoader")
 
 class PipelineLoader {
     static let models = Settings.shared.applicationSupportURL().appendingPathComponent("hf-diffusion-models")
@@ -68,7 +71,7 @@ extension PipelineLoader {
         do {
             try FileManager.default.removeItem(at: models)
         } catch {
-            print("Failed to delete: \(models), error: \(error.localizedDescription)")
+            logger.error("Failed to delete: \(models), error: \(error.localizedDescription)")
         }
     }
 }
@@ -119,7 +122,7 @@ extension PipelineLoader {
             do {
                 try FileManager.default.createDirectory(atPath: PipelineLoader.models.path, withIntermediateDirectories: true, attributes: nil)
             } catch {
-                print("Error creating PipelineLoader.models path: \(error)")
+                logger.error("Error creating PipelineLoader.models path: \(error)")
             }
 
             try await download()
@@ -191,7 +194,7 @@ extension PipelineLoader {
                                                        reduceMemory: model.reduceMemory)
         }
         try pipeline.loadResources()
-        print("Pipeline loaded in \(Date().timeIntervalSince(beginDate))")
+        logger.info("Pipeline loaded in \(Date().timeIntervalSince(beginDate))")
         state = .loaded
         return pipeline
     }

@@ -8,6 +8,9 @@
 
 import Combine
 import SwiftUI
+import os
+
+private let logger = Logger(subsystem: "com.yourcompany.Diffusion", category: "ControlsView")
 import CompactSlider
 
 /// Track a StableDiffusion Pipeline's readiness. This include actively downloading from the internet, uncompressing the downloaded zip file, actively loading into memory, ready to use or an Error state.
@@ -104,7 +107,7 @@ struct ControlsView: View {
 
     fileprivate func modelDidChange(model: ModelInfo) {
         guard pipelineLoader?.model != model || pipelineLoader?.computeUnits != generation.computeUnits else {
-            print("Reusing same model \(model) with units \(generation.computeUnits)")
+            logger.debug("Reusing same model \(model.modelId) with units \(generation.computeUnits.rawValue)")
             return
         }
 
@@ -112,7 +115,7 @@ struct ControlsView: View {
             // Reset compute units to GPU if Neural Engine is not supported
             Settings.shared.userSelectedComputeUnits = .cpuAndGPU
             resetComputeUnitsState()
-            print("Neural Engine not supported for model \(model), switching to GPU")
+            logger.warning("Neural Engine not supported for model \(model.modelId), switching to GPU")
         } else {
             resetComputeUnitsState()
         }
@@ -144,7 +147,7 @@ struct ControlsView: View {
                 generation.pipeline = try await loader.prepare()
                 pipelineState = .ready
             } catch {
-                print("Could not load model, error: \(error)")
+                logger.error("Could not load model, error: \(error)")
                 pipelineState = .failed(error)
             }
         }

@@ -7,6 +7,9 @@
 //
 
 import SwiftUI
+import os
+
+private let logger = Logger(subsystem: "com.yourcompany.Diffusion", category: "TextToImage")
 import Combine
 import StableDiffusion
 
@@ -39,7 +42,7 @@ struct ShareButtons: View {
                         let scene = UIApplication.shared.connectedScenes.first as! UIWindowScene
                         scene.windows.first!.rootViewController!.present(controller, animated: true)
                     } catch {
-                        print("Error creating file")
+                        logger.error("Error creating file")
                     }
                 } label: {
                     Label("Save…", systemImage: "square.and.arrow.down")

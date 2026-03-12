@@ -10,6 +10,9 @@ import Combine
 import SwiftUI
 import StableDiffusion
 import CoreML
+import os
+
+private let logger = Logger(subsystem: "com.yourcompany.Diffusion", category: "State")
 
 let DEFAULT_MODEL = ModelInfo.sd3
 let DEFAULT_PROMPT = "Labrador in the style of Vermeer"
@@ -239,7 +242,7 @@ class Settings {
             try fileManager.createDirectory(at: appDirectoryURL, withIntermediateDirectories: true, attributes: nil)
             return appDirectoryURL
         } catch {
-            print("Error creating application support directory: \(error)")
+            logger.error("Error creating application support directory: \(error)")
             return fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         }
     }
@@ -253,7 +256,7 @@ class Settings {
             do {
                 try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true, attributes: nil)
             } catch {
-                print("Failed to create temporary directory: \(error)")
+                logger.error("Failed to create temporary directory: \(error)")
                 return FileManager.default.temporaryDirectory
             }
         }

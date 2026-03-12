@@ -7,6 +7,9 @@
 //
 
 import SwiftUI
+import os
+
+private let logger = Logger(subsystem: "com.yourcompany.Diffusion", category: "ContentView")
 import ImageIO
 
 
@@ -37,13 +40,13 @@ struct ShareButtons: View {
         let image = NSImage(cgImage: cgImage, size: .zero)
         let imageRepresentation = NSBitmapImageRep(data: image.tiffRepresentation!)
         guard let pngData = imageRepresentation?.representation(using: .png, properties: [:]) else {
-            print("Error generating PNG data")
+            logger.error("Error generating PNG data")
             return
         }
         do {
             try pngData.write(to: path)
         } catch {
-            print("Error saving: \(error)")
+            logger.error("Error saving: \(error)")
         }
     }
 

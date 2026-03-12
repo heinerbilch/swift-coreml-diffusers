@@ -7,6 +7,9 @@
 
 import UIKit
 import SwiftUI
+import os
+
+private let logger = Logger(subsystem: "com.yourcompany.Diffusion", category: "iOS")
 import UniformTypeIdentifiers
 
 extension DiffusionImage {
@@ -27,7 +30,7 @@ extension DiffusionImage {
                 try imageData.write(to: fileURL)
                 return fileURL
             } catch {
-                print("Error saving image to temporary file: \(error)")
+                logger.error("Error saving image to temporary file: \(error)")
             }
         }
         return nil

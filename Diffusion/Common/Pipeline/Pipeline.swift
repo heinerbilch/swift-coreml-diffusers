@@ -8,6 +8,9 @@
 
 import Foundation
 import CoreML
+import os
+
+private let logger = Logger(subsystem: "com.yourcompany.Diffusion", category: "Pipeline")
 import Combine
 
 import StableDiffusion
@@ -122,7 +125,7 @@ class Pipeline {
             return !canceled
         }
         let interval = Date().timeIntervalSince(beginDate)
-        print("Got images: \(images) in \(interval)")
+        logger.info("Got images: \(images) in \(interval)")
         
         // Unwrap the 1 image we asked for, nil means safety checker triggered
         let image = images.compactMap({ $0 }).first

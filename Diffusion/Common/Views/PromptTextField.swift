@@ -8,6 +8,9 @@
 
 import SwiftUI
 import Combine
+import os
+
+private let logger = Logger(subsystem: "com.yourcompany.Diffusion", category: "PromptTextField")
 import StableDiffusion
 
 struct PromptTextField: View {
@@ -128,7 +131,7 @@ struct PromptTextField: View {
                 )
                 currentModelVersion = modelVersion
             } catch {
-                print("Failed to create tokenizer: \(error)")
+                logger.error("Failed to create tokenizer: \(error)")
                 return
             }
         }

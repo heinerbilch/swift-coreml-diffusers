@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+import os
+
+private let logger = Logger(subsystem: "com.yourcompany.Diffusion", category: "macOS")
 import UniformTypeIdentifiers
 
 extension DiffusionImage {
@@ -30,7 +33,7 @@ extension DiffusionImage {
                 try pngData.write(to: fileURL)
                 return fileURL
             } catch {
-                print("Error saving image to temporary file: \(error)")
+                logger.error("Error saving image to temporary file: \(error)")
             }
         }
         return nil
@@ -56,8 +59,8 @@ extension DiffusionImage: NSItemProviderWriting {
     }
     
     func itemProviderRepresentation(forTypeIdentifier typeIdentifier: String) throws -> NSItemProvider {
-        print("itemProviderRepresentation(forTypeIdentifier")
-        print(typeIdentifier)
+        logger.debug("itemProviderRepresentation(forTypeIdentifier")
+        logger.debug("typeIdentifier: \(typeIdentifier)")
         let data = try NSKeyedArchiver.archivedData(withRootObject: self, requiringSecureCoding: true)
         let itemProvider = NSItemProvider()
         itemProvider.registerDataRepresentation(forTypeIdentifier: typeIdentifier, visibility: NSItemProviderRepresentationVisibility.all) { completion in
