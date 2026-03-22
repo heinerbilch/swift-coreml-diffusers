@@ -12,12 +12,14 @@ import Combine
 
 import ZIPFoundation
 import StableDiffusion
+import OSLog
 
 class PipelineLoader {
-    static let models = Settings.shared.applicationSupportURL().appendingPathComponent("hf-diffusion-models")
+    private let logger = Logger(subsystem: "com.huggingface.swift-coreml-diffusers", category: "PipelineLoader")
+    static let models = URL.init(filePath: "/Volumes/Vol2/models")
     let model: ModelInfo
     let computeUnits: ComputeUnits
-    let maxSeed: UInt32
+    private let maxSeed: UInt32
 
     private var downloadSubscriber: Cancellable?
 
@@ -60,19 +62,6 @@ class PipelineLoader {
         state = .waitingToDownload
     }
 }
-
-extension PipelineLoader {
-    // Unused. Kept for debugging purposes. --pcuenca
-    static func removeAll() {
-        // Delete the parent models folder as it will be recreated when it's needed again
-        do {
-            try FileManager.default.removeItem(at: models)
-        } catch {
-            print("Failed to delete: \(models), error: \(error.localizedDescription)")
-        }
-    }
-}
-
 
 extension PipelineLoader {
     func cancel() { downloader?.cancel() }
@@ -128,6 +117,7 @@ extension PipelineLoader {
             return Pipeline(pipeline, maxSeed: maxSeed)
         } catch {
             state = .failed(error)
+            logger.warning("Pipeline loading failed: \(error)")
             throw error
         }
     }
@@ -144,6 +134,7 @@ extension PipelineLoader {
             }
         }
         try downloader.waitUntilDone()
+        logger.info("Download of \(self.url) complete")
         return downloadedURL
     }
 
@@ -153,12 +144,11 @@ extension PipelineLoader {
         do {
             try FileManager().unzipItem(at: downloadedURL, to: uncompressURL)
         } catch {
-            // Cleanup if error occurs while unzipping
-            try FileManager.default.removeItem(at: uncompressURL)
+            logger.warning("Unzip of \(self.downloadedURL) failed")
             throw error
         }
-        try FileManager.default.removeItem(at: downloadedURL)
         state = .readyOnDisk
+        logger.info("Unzip of \(self.downloadedURL) complete")
     }
 
     func load(url: URL) async throws -> StableDiffusionPipelineProtocol {
@@ -172,6 +162,7 @@ extension PipelineLoader {
                                                          configuration: configuration,
                                                          reduceMemory: model.reduceMemory)
             } else {
+                logger.warning("Stable Diffusion XL requires macOS 14")
                 throw "Stable Diffusion XL requires macOS 14"
             }
 
@@ -181,6 +172,7 @@ extension PipelineLoader {
                                                         configuration: configuration,
                                                         reduceMemory: model.reduceMemory)
             } else {
+                logger.warning("Stable Diffusion 3 requires macOS 14")
                 throw "Stable Diffusion 3 requires macOS 14"
             }
         } else {
@@ -191,8 +183,8 @@ extension PipelineLoader {
                                                        reduceMemory: model.reduceMemory)
         }
         try pipeline.loadResources()
-        print("Pipeline loaded in \(Date().timeIntervalSince(beginDate))")
         state = .loaded
+        logger.info("Pipeline loaded in \(Date().timeIntervalSince(beginDate))")
         return pipeline
     }
 }

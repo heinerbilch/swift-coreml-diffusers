@@ -7,7 +7,9 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
+import OSLog
 
+private let logger = Logger(subsystem: "com.huggingface.diffusion", category: "DiffusionImage")
 extension DiffusionImage {
     
     /// Instance func to place the generated image on the file system and return the `fileURL` where it is stored.
@@ -30,7 +32,7 @@ extension DiffusionImage {
                 try pngData.write(to: fileURL)
                 return fileURL
             } catch {
-                print("Error saving image to temporary file: \(error)")
+                logger.warning("Saving image to temporary file failed: \(error)")
             }
         }
         return nil
@@ -89,6 +91,7 @@ extension DiffusionImage: NSPasteboardWriting {
     // MARK: - NSPasteboardWriting
     
     func writableTypes(for pasteboard: NSPasteboard) -> [NSPasteboard.PasteboardType] {
+        logger.info("Passthrough writableTypes for image to pasteboard as PNG")
         return [
             NSPasteboard.PasteboardType.fileURL,
             NSPasteboard.PasteboardType(rawValue: UTType.png.identifier)
@@ -97,16 +100,16 @@ extension DiffusionImage: NSPasteboardWriting {
     
     func pasteboardPropertyList(forType type: NSPasteboard.PasteboardType) -> Any? {
         if type == NSPasteboard.PasteboardType.fileURL {
-            
+            logger.info("Writing image to pasteboard as \(self.fileURL)")
             // Return the file's data' representation
             return fileURL.dataRepresentation
             
         } else if type.rawValue == UTType.png.identifier {
-            
+            logger.info("Writing image to pasteboard as PNG")
             // Return a PNG data representation
             return pngRepresentation()
         }
-        
+        logger.info("Unsupported pasteboard type: \(type.rawValue)")
         return nil
     }
 }
