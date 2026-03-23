@@ -253,11 +253,7 @@ struct ControlsView: View {
 
                     let guidanceScaleValue = generation.guidanceScale.formatted("%.1f")
                     DisclosureGroup(isExpanded: $disclosedGuidance) {
-                        CompactSlider(value: $generation.guidanceScale, in: 0...20, step: 0.5) {
-                            Text("Guidance Scale")
-                            Spacer()
-                            Text(guidanceScaleValue)
-                        }
+                        CompactSlider(value: $generation.guidanceScale, in: 0...20, step: 0.5)
                         .onChange(of: generation.guidanceScale) { guidanceScale in
                             Settings.shared.guidanceScale = guidanceScale
                         }
@@ -284,11 +280,7 @@ struct ControlsView: View {
                     }
 
                     DisclosureGroup(isExpanded: $disclosedSteps) {
-                        CompactSlider(value: $generation.steps, in: 1...150, step: 1) {
-                            Text("Steps")
-                            Spacer()
-                            Text("\(Int(generation.steps))")
-                        }
+                        CompactSlider(value: $generation.steps, in: 1...150, step: 1)
                         .onChange(of: generation.steps) { steps in
                             Settings.shared.stepCount = steps
                         }
@@ -314,11 +306,7 @@ struct ControlsView: View {
                     }
 
                     DisclosureGroup(isExpanded: $disclosedPreview) {
-                        CompactSlider(value: $generation.previews, in: 0...25, step: 1) {
-                            Text("Previews")
-                            Spacer()
-                            Text("\(Int(generation.previews))")
-                        }
+                        CompactSlider(value: $generation.previews, in: 0...25, step: 1)
                         .onChange(of: generation.previews) { previews in
                             Settings.shared.previewCount = previews
                         }
