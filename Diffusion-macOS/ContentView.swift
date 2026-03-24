@@ -8,8 +8,9 @@
 
 import SwiftUI
 import ImageIO
+import OSLog
 
-
+private let logger = Logger(subsystem: "com.huggingface.diffusion", category: "ContentView")
 // AppKit version that uses NSImage, NSSavePanel
 struct ShareButtons: View {
     var image: CGImage
@@ -37,13 +38,13 @@ struct ShareButtons: View {
         let image = NSImage(cgImage: cgImage, size: .zero)
         let imageRepresentation = NSBitmapImageRep(data: image.tiffRepresentation!)
         guard let pngData = imageRepresentation?.representation(using: .png, properties: [:]) else {
-            print("Error generating PNG data")
+            logger.notice("Error generating PNG data")
             return
         }
         do {
             try pngData.write(to: path)
         } catch {
-            print("Error saving: \(error)")
+            logger.notice("Error saving: \(error)")
         }
     }
 
@@ -54,6 +55,7 @@ struct ShareButtons: View {
             Button() {
                 if let url = showSavePanel() {
                     savePNG(cgImage: image, path: url)
+                    logger.info("Saving \(name)")
                 }
             } label: {
                 Label("Save…", systemImage: "square.and.arrow.down")
@@ -68,10 +70,12 @@ struct ContentView: View {
     func toolbar() -> any View {
         if case .complete(let prompt, let cgImage, _, _) = generation.state, let cgImage = cgImage {
             // TODO: share seed too
+            logger.info("Sharing \(prompt)")
             return ShareButtons(image: cgImage, name: prompt)
         } else {
             let prompt = DEFAULT_PROMPT
             let cgImage = NSImage(imageLiteralResourceName: "placeholder").cgImage(forProposedRect: nil, context: nil, hints: nil)!
+            logger.info("Sharing default \(prompt)")
             return ShareButtons(image: cgImage, name: prompt)
         }
     }
