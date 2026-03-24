@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 90;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -114,36 +114,28 @@
 /* Begin PBXFrameworksBuildPhase section */
 		EBE755C2293E37DD00806B32 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				EBB5BA5D294504DE003A2A5B /* ZIPFoundation in Frameworks */,
 				16AFDD512C1B7D6700536A62 /* StableDiffusion in Frameworks */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		EBE755D3293E37DE00806B32 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		EBE755DD293E37DE00806B32 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		F155201E2971093300DC009B /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				F155203C297118E700DC009B /* CompactSlider in Frameworks */,
 				16AFDD4F2C1B7D6200536A62 /* StableDiffusion in Frameworks */,
 				EBDD7DAF29731FB300C1C4B2 /* ZIPFoundation in Frameworks */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -414,7 +406,6 @@
 				};
 			};
 			buildConfigurationList = EBE755C0293E37DD00806B32 /* Build configuration list for PBXProject "Diffusion" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -427,6 +418,7 @@
 				F155203A297118E600DC009B /* XCRemoteSwiftPackageReference "CompactSlider" */,
 				16AFDD4D2C1B7D4800536A62 /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */,
 			);
+			preferredProjectObjectVersion = 90;
 			productRefGroup = EBE755C6293E37DD00806B32 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -442,35 +434,27 @@
 /* Begin PBXResourcesBuildPhase section */
 		EBE755C3293E37DD00806B32 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				EBE755D1293E37DD00806B32 /* Preview Assets.xcassets in Resources */,
 				EBE755CD293E37DD00806B32 /* Assets.xcassets in Resources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		EBE755D4293E37DE00806B32 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		EBE755DE293E37DE00806B32 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		F155201F2971093300DC009B /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				EBDD7DC02978642200C1C4B2 /* Assets.xcassets in Resources */,
 				F155202B2971093400DC009B /* Preview Assets.xcassets in Resources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
@@ -478,27 +462,25 @@
 		EB7FE72529954BFF009056BD /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
-			buildActionMask = 12;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"$CONFIGURATION\" != \"Debug\" ]\nthen    \n    version=`date +%Y%m%d.%H%M%S`\n    CONFIG_FILE=${SRCROOT}/config/common.xcconfig\n    sed -e 's/^CURRENT_PROJECT_VERSION.*/CURRENT_PROJECT_VERSION = '\"$version\"'/' ${CONFIG_FILE} > ${CONFIG_FILE}.tmp\n    [[ -s ${CONFIG_FILE}.tmp ]] && {\n        mv ${CONFIG_FILE}.tmp ${CONFIG_FILE}\n    }\nfi\n";
+			shellScript = (
+				"if [ \"$CONFIGURATION\" != \"Debug\" ]",
+				"then    ",
+				"    version=`date +%Y%m%d.%H%M%S`",
+				"    CONFIG_FILE=${SRCROOT}/config/common.xcconfig",
+				"    sed -e 's/^CURRENT_PROJECT_VERSION.*/CURRENT_PROJECT_VERSION = '\"$version\"'/' ${CONFIG_FILE} > ${CONFIG_FILE}.tmp",
+				"    [[ -s ${CONFIG_FILE}.tmp ]] && {",
+				"        mv ${CONFIG_FILE}.tmp ${CONFIG_FILE}",
+				"    }",
+				"fi",
+				"",
+			);
 		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		EBE755C1293E37DD00806B32 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				EBE75602293E91E200806B32 /* Pipeline.swift in Sources */,
 				EBE755CB293E37DD00806B32 /* TextToImage.swift in Sources */,
@@ -514,28 +496,22 @@
 				EBE755C9293E37DD00806B32 /* DiffusionApp.swift in Sources */,
 				EBDD7DB32973200200C1C4B2 /* Utils.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		EBE755D2293E37DE00806B32 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				EBE755DB293E37DE00806B32 /* DiffusionTests.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		EBE755DC293E37DE00806B32 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				EBE755E7293E37DE00806B32 /* DiffusionUITestsLaunchTests.swift in Sources */,
 				EBE755E5293E37DE00806B32 /* DiffusionUITests.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		F155201D2971093300DC009B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				EBDD7DAB29731F7500C1C4B2 /* PipelineLoader.swift in Sources */,
 				EBDD7DAA29731F6C00C1C4B2 /* Pipeline.swift in Sources */,
@@ -555,7 +531,6 @@
 				EBDD7DBD2977FFB300C1C4B2 /* GeneratedImageView.swift in Sources */,
 				8CEEB7DA2A54C88C00C23829 /* DiffusionImage.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
@@ -581,7 +556,7 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		EBE755E8293E37DE00806B32 /* Debug */ = {
+		EBE755E8293E37DE00806B32 /* Debug configuration for PBXProject "Diffusion" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -642,7 +617,7 @@
 			};
 			name = Debug;
 		};
-		EBE755E9293E37DE00806B32 /* Release */ = {
+		EBE755E9293E37DE00806B32 /* Release configuration for PBXProject "Diffusion" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -696,7 +671,7 @@
 			};
 			name = Release;
 		};
-		EBE755EB293E37DE00806B32 /* Debug */ = {
+		EBE755EB293E37DE00806B32 /* Debug configuration for PBXNativeTarget "Diffusion" */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = EBDD7DBA2976F03600C1C4B2 /* debug.xcconfig */;
 			buildSettings = {
@@ -759,7 +734,7 @@
 			};
 			name = Debug;
 		};
-		EBE755EC293E37DE00806B32 /* Release */ = {
+		EBE755EC293E37DE00806B32 /* Release configuration for PBXNativeTarget "Diffusion" */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = EBE3FF4A295DFE2400E921AA /* common.xcconfig */;
 			buildSettings = {
@@ -823,7 +798,7 @@
 			};
 			name = Release;
 		};
-		EBE755EE293E37DE00806B32 /* Debug */ = {
+		EBE755EE293E37DE00806B32 /* Debug configuration for PBXNativeTarget "DiffusionTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -846,7 +821,7 @@
 			};
 			name = Debug;
 		};
-		EBE755EF293E37DE00806B32 /* Release */ = {
+		EBE755EF293E37DE00806B32 /* Release configuration for PBXNativeTarget "DiffusionTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -869,7 +844,7 @@
 			};
 			name = Release;
 		};
-		EBE755F1293E37DE00806B32 /* Debug */ = {
+		EBE755F1293E37DE00806B32 /* Debug configuration for PBXNativeTarget "DiffusionUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -891,7 +866,7 @@
 			};
 			name = Debug;
 		};
-		EBE755F2293E37DE00806B32 /* Release */ = {
+		EBE755F2293E37DE00806B32 /* Release configuration for PBXNativeTarget "DiffusionUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -913,7 +888,7 @@
 			};
 			name = Release;
 		};
-		F155202D2971093400DC009B /* Debug */ = {
+		F155202D2971093400DC009B /* Debug configuration for PBXNativeTarget "Diffusion-macOS" */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = EBDD7DBA2976F03600C1C4B2 /* debug.xcconfig */;
 			buildSettings = {
@@ -946,7 +921,7 @@
 			};
 			name = Debug;
 		};
-		F155202E2971093400DC009B /* Release */ = {
+		F155202E2971093400DC009B /* Release configuration for PBXNativeTarget "Diffusion-macOS" */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = EBE3FF4A295DFE2400E921AA /* common.xcconfig */;
 			buildSettings = {
@@ -986,46 +961,41 @@
 		EBE755C0293E37DD00806B32 /* Build configuration list for PBXProject "Diffusion" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				EBE755E8293E37DE00806B32 /* Debug */,
-				EBE755E9293E37DE00806B32 /* Release */,
+				EBE755E8293E37DE00806B32 /* Debug configuration for PBXProject "Diffusion" */,
+				EBE755E9293E37DE00806B32 /* Release configuration for PBXProject "Diffusion" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		EBE755EA293E37DE00806B32 /* Build configuration list for PBXNativeTarget "Diffusion" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				EBE755EB293E37DE00806B32 /* Debug */,
-				EBE755EC293E37DE00806B32 /* Release */,
+				EBE755EB293E37DE00806B32 /* Debug configuration for PBXNativeTarget "Diffusion" */,
+				EBE755EC293E37DE00806B32 /* Release configuration for PBXNativeTarget "Diffusion" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		EBE755ED293E37DE00806B32 /* Build configuration list for PBXNativeTarget "DiffusionTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				EBE755EE293E37DE00806B32 /* Debug */,
-				EBE755EF293E37DE00806B32 /* Release */,
+				EBE755EE293E37DE00806B32 /* Debug configuration for PBXNativeTarget "DiffusionTests" */,
+				EBE755EF293E37DE00806B32 /* Release configuration for PBXNativeTarget "DiffusionTests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		EBE755F0293E37DE00806B32 /* Build configuration list for PBXNativeTarget "DiffusionUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				EBE755F1293E37DE00806B32 /* Debug */,
-				EBE755F2293E37DE00806B32 /* Release */,
+				EBE755F1293E37DE00806B32 /* Debug configuration for PBXNativeTarget "DiffusionUITests" */,
+				EBE755F2293E37DE00806B32 /* Release configuration for PBXNativeTarget "DiffusionUITests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		F155202F2971093400DC009B /* Build configuration list for PBXNativeTarget "Diffusion-macOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				F155202D2971093400DC009B /* Debug */,
-				F155202E2971093400DC009B /* Release */,
+				F155202D2971093400DC009B /* Debug configuration for PBXNativeTarget "Diffusion-macOS" */,
+				F155202E2971093400DC009B /* Release configuration for PBXNativeTarget "Diffusion-macOS" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
