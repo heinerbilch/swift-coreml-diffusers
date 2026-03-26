@@ -6,7 +6,6 @@
 //  See LICENSE at https://github.com/huggingface/swift-coreml-diffusers/LICENSE
 //
 
-
 import CoreML
 import Combine
 
@@ -14,8 +13,8 @@ import ZIPFoundation
 import StableDiffusion
 import OSLog
 
+private var logger = Logger(subsystem: "co.hugginface.diffusers", category: "PipelineLoader")
 class PipelineLoader {
-    private let logger = Logger(subsystem: "com.huggingface.swift-coreml-diffusers", category: "PipelineLoader")
     static let models = URL.init(filePath: "/Volumes/Vol2/models")
     let model: ModelInfo
     let computeUnits: ComputeUnits
@@ -71,27 +70,19 @@ extension PipelineLoader {
     var url: URL {
         return model.modelURL(for: variant)
     }
-
     var filename: String {
         return url.lastPathComponent
     }
-
     var downloadedURL: URL { PipelineLoader.models.appendingPathComponent(filename) }
-
     var uncompressURL: URL { PipelineLoader.models }
-
     var packagesFilename: String { (filename as NSString).deletingPathExtension }
-
     var compiledURL: URL { downloadedURL.deletingLastPathComponent().appendingPathComponent(packagesFilename)  }
-
     var downloaded: Bool {
         return FileManager.default.fileExists(atPath: downloadedURL.path)
     }
-
     var ready: Bool {
         return FileManager.default.fileExists(atPath: compiledURL.path)
     }
-
     var variant: AttentionVariant {
         switch computeUnits {
         case .cpuOnly           : return .original          // Not supported yet
@@ -107,13 +98,14 @@ extension PipelineLoader {
         do {
             do {
                 try FileManager.default.createDirectory(atPath: PipelineLoader.models.path, withIntermediateDirectories: true, attributes: nil)
+                logger.debug("Created PipelineLoader.models directory \(PipelineLoader.models.path)")
             } catch {
-                print("Error creating PipelineLoader.models path: \(error)")
+                logger.warning("Error creating PipelineLoader.models path: \(error)")
             }
-
             try await download()
             try await unzip()
             let pipeline = try await load(url: compiledURL)
+            logger.debug("Pipeline loaded successfully from \(self.compiledURL.path)")
             return Pipeline(pipeline, maxSeed: maxSeed)
         } catch {
             state = .failed(error)
@@ -155,6 +147,7 @@ extension PipelineLoader {
         let beginDate = Date()
         let configuration = MLModelConfiguration()
         configuration.computeUnits = computeUnits
+        logger.debug("Configuration: \(configuration)")
         let pipeline: StableDiffusionPipelineProtocol
         if model.isXL {
             if #available(macOS 14.0, iOS 17.0, *) {

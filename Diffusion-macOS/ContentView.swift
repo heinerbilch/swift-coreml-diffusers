@@ -6,20 +6,24 @@
 //  See LICENSE at https://github.com/huggingface/swift-coreml-diffusers/LICENSE
 //
 
-import SwiftUI
 import ImageIO
 import OSLog
+import Photos
+import SwiftUI
 
-private let logger = Logger(subsystem: "com.huggingface.diffusion", category: "ContentView")
+private let logger = Logger(
+    subsystem: "co.huggingface.diffusers",
+    category: "ContentView"
+)
 // AppKit version that uses NSImage, NSSavePanel
 struct ShareButtons: View {
     var image: CGImage
     var name: String
-    
+
     var filename: String {
         name.replacingOccurrences(of: " ", with: "_")
     }
-    
+
     func showSavePanel() -> URL? {
         let savePanel = NSSavePanel()
         savePanel.allowedContentTypes = [.png]
@@ -36,8 +40,15 @@ struct ShareButtons: View {
 
     func savePNG(cgImage: CGImage, path: URL) {
         let image = NSImage(cgImage: cgImage, size: .zero)
-        let imageRepresentation = NSBitmapImageRep(data: image.tiffRepresentation!)
-        guard let pngData = imageRepresentation?.representation(using: .png, properties: [:]) else {
+        let imageRepresentation = NSBitmapImageRep(
+            data: image.tiffRepresentation!
+        )
+        guard
+            let pngData = imageRepresentation?.representation(
+                using: .png,
+                properties: [:]
+            )
+        else {
             logger.notice("Error generating PNG data")
             return
         }
@@ -51,8 +62,11 @@ struct ShareButtons: View {
     var body: some View {
         let imageView = Image(image, scale: 1, label: Text(name))
         HStack {
-            ShareLink(item: imageView, preview: SharePreview(name, image: imageView))
-            Button() {
+            ShareLink(
+                item: imageView,
+                preview: SharePreview(name, image: imageView)
+            )
+            Button {
                 if let url = showSavePanel() {
                     savePNG(cgImage: image, path: url)
                     logger.info("Saving \(name)")
@@ -67,19 +81,47 @@ struct ShareButtons: View {
 struct ContentView: View {
     @StateObject var generation = GenerationContext()
 
+    func photoAuthorizationStatus() -> PHAuthorizationStatus {
+        return PHPhotoLibrary.authorizationStatus(for: .addOnly)
+    }
+
+    func requestPhotoLibraryAccess() {
+        PHPhotoLibrary.requestAuthorization(for: .addOnly) {
+            authorizationStatus in
+            switch authorizationStatus {
+            case .limited:
+                logger.debug("limited authorization granted")
+            case .restricted:
+                logger.debug("restricted")
+            case .authorized:
+                logger.debug("authorization granted")
+            default:
+                logger.warning("Unimplemented")
+            }
+        }
+    }
+
     func toolbar() -> any View {
-        if case .complete(let prompt, let cgImage, _, _) = generation.state, let cgImage = cgImage {
+        if case .complete(let prompt, let cgImage, _, _) = generation.state,
+            let cgImage = cgImage
+        {
+            let status = photoAuthorizationStatus().rawValue
+            logger.debug("Photo Authorization Status: \(status)")
+            if status == 0 {
+                requestPhotoLibraryAccess()
+            }
             // TODO: share seed too
             logger.info("Sharing \(prompt)")
             return ShareButtons(image: cgImage, name: prompt)
         } else {
             let prompt = DEFAULT_PROMPT
-            let cgImage = NSImage(imageLiteralResourceName: "placeholder").cgImage(forProposedRect: nil, context: nil, hints: nil)!
+            let cgImage = NSImage(imageLiteralResourceName: "placeholder")
+                .cgImage(forProposedRect: nil, context: nil, hints: nil)!
             logger.info("Sharing default \(prompt)")
             return ShareButtons(image: cgImage, name: prompt)
         }
     }
-    
+
     var body: some View {
         NavigationSplitView {
             ControlsView()
@@ -92,7 +134,6 @@ struct ContentView: View {
                 .toolbar {
                     AnyView(toolbar())
                 }
-
         }
         .environmentObject(generation)
     }

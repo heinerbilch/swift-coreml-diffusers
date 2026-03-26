@@ -7,9 +7,11 @@
 //
 
 import Combine
-import SwiftUI
 import CompactSlider
+import SwiftUI
+import OSLog
 
+private var logger = Logger(subsystem: "co.hugginface.diffusers", category: "ControlsView")
 /// Track a StableDiffusion Pipeline's readiness. This include actively downloading from the internet, uncompressing the downloaded zip file, actively loading into memory, ready to use or an Error state.
 enum PipelineState {
     case downloading(Double)
@@ -30,8 +32,12 @@ struct LabelToggleDisclosureGroupStyle: DisclosureGroupStyle {
                         configuration.isExpanded.toggle()
                     }
                 } label: {
-                    Image(systemName: configuration.isExpanded ? "chevron.down" : "chevron.right").frame(width:8, height: 8)
-                }.buttonStyle(.plain).font(.footnote).fontWeight(.semibold).foregroundColor(.gray)
+                    Image(
+                        systemName: configuration.isExpanded
+                            ? "chevron.down" : "chevron.right"
+                    ).frame(width: 8, height: 8)
+                }.buttonStyle(.plain).font(.footnote).fontWeight(.semibold)
+                    .foregroundColor(.gray)
                 configuration.label.onTapGesture {
                     withAnimation {
                         configuration.isExpanded.toggle()
@@ -50,7 +56,7 @@ struct ControlsView: View {
     @EnvironmentObject var generation: GenerationContext
 
     static let models = ModelInfo.MODELS
-    
+
     @State private var model = Settings.shared.currentModel.modelVersion
     @State private var disclosedModel = true
     @State private var disclosedPrompt = true
@@ -67,7 +73,7 @@ struct ControlsView: View {
 
     // TODO: make this computed, and observable, and easy to read
     @State private var mustShowSafetyCheckerDisclaimer = false
-    @State private var mustShowModelDownloadDisclaimer = false      // When changing advanced settings
+    @State private var mustShowModelDownloadDisclaimer = false  // When changing advanced settings
 
     @State private var showModelsHelp = false
     @State private var showPromptsHelp = false
@@ -80,49 +86,71 @@ struct ControlsView: View {
     @State private var negativeTokenCount: Int = 0
 
     let maxSeed: UInt32 = UInt32.max
-    private var textFieldLabelSeed: String { generation.seed < 1 ? "Random Seed" : "Seed" }
-    
+    private var textFieldLabelSeed: String {
+        generation.seed < 1 ? "Random Seed" : "Seed"
+    }
+
     var modelFilename: String? {
         guard let pipelineLoader = pipelineLoader else { return nil }
         let selectedURL = pipelineLoader.compiledURL
-        guard FileManager.default.fileExists(atPath: selectedURL.path) else { return nil }
+        guard FileManager.default.fileExists(atPath: selectedURL.path) else {
+            return nil
+        }
         return selectedURL.path
     }
-    
+
     fileprivate func updateSafetyCheckerState() {
-        mustShowSafetyCheckerDisclaimer = generation.disableSafety && !Settings.shared.safetyCheckerDisclaimerShown
+        mustShowSafetyCheckerDisclaimer =
+            generation.disableSafety
+            && !Settings.shared.safetyCheckerDisclaimerShown
     }
-    
+
     fileprivate func updateComputeUnitsState() {
         Settings.shared.userSelectedComputeUnits = generation.computeUnits
         modelDidChange(model: Settings.shared.currentModel)
     }
-    
+
     fileprivate func resetComputeUnitsState() {
-        generation.computeUnits = Settings.shared.userSelectedComputeUnits ?? ModelInfo.defaultComputeUnits
+        generation.computeUnits =
+            Settings.shared.userSelectedComputeUnits
+            ?? ModelInfo.defaultComputeUnits
     }
 
     fileprivate func modelDidChange(model: ModelInfo) {
-        guard pipelineLoader?.model != model || pipelineLoader?.computeUnits != generation.computeUnits else {
-            print("Reusing same model \(model) with units \(generation.computeUnits)")
+        logger.debug("Modell changed to \(model.modelId)")
+        guard
+            pipelineLoader?.model != model
+                || pipelineLoader?.computeUnits != generation.computeUnits
+        else {
+            logger.info(
+                "Reusing same model \(model.modelId) with units \(generation.computeUnits.rawValue)"
+            )
             return
         }
 
-        if !model.supportsNeuralEngine && generation.computeUnits == .cpuAndNeuralEngine {
+        if !model.supportsNeuralEngine
+            && generation.computeUnits == .cpuAndNeuralEngine
+        {
             // Reset compute units to GPU if Neural Engine is not supported
             Settings.shared.userSelectedComputeUnits = .cpuAndGPU
             resetComputeUnitsState()
-            print("Neural Engine not supported for model \(model), switching to GPU")
+            logger.info(
+                "Neural Engine not supported for model \(model.modelId), switching to GPU"
+            )
         } else {
             resetComputeUnitsState()
         }
 
         Settings.shared.currentModel = model
-
+        logger.debug("Current model: \(Settings.shared.currentModel.modelId)")
         pipelineLoader?.cancel()
         pipelineState = .downloading(0)
         Task.init {
-            let loader = PipelineLoader(model: model, computeUnits: generation.computeUnits, maxSeed: maxSeed)
+            let loader = PipelineLoader(
+                model: model,
+                computeUnits: generation.computeUnits,
+                maxSeed: maxSeed
+            )
             self.pipelineLoader = loader
             stateSubscriber = loader.statePublisher.sink { state in
                 DispatchQueue.main.async {
@@ -144,49 +172,66 @@ struct ControlsView: View {
                 generation.pipeline = try await loader.prepare()
                 pipelineState = .ready
             } catch {
-                print("Could not load model, error: \(error)")
+                logger.warning("Could not load model: \(error)")
                 pipelineState = .failed(error)
             }
         }
     }
-    
-    fileprivate func isModelDownloaded(_ model: ModelInfo, computeUnits: ComputeUnits? = nil) -> Bool {
-        PipelineLoader(model: model, computeUnits: computeUnits ?? generation.computeUnits).ready
+
+    fileprivate func isModelDownloaded(
+        _ model: ModelInfo,
+        computeUnits: ComputeUnits? = nil
+    ) -> Bool {
+        PipelineLoader(
+            model: model,
+            computeUnits: computeUnits ?? generation.computeUnits
+        ).ready
     }
-    
+
     fileprivate func modelLabel(_ model: ModelInfo) -> Text {
         let downloaded = isModelDownloaded(model)
         let prefix = downloaded ? "● " : "◌ "  //"○ "
-        return Text(prefix).foregroundColor(downloaded ? .accentColor : .secondary) + Text(model.modelVersion)
+        logger.debug("Prefix: \(prefix)")
+        return Text(prefix).foregroundColor(
+            downloaded ? .accentColor : .secondary
+        ) + Text(model.modelVersion)
     }
-    
+
     fileprivate func prompts() -> some View {
         VStack {
             Spacer()
-            PromptTextField(text: $generation.positivePrompt, isPositivePrompt: true, model: $model)
-                .onChange(of: generation.positivePrompt) { prompt in
-                    Settings.shared.prompt = prompt
-                }
-                .padding(.top, 5)
+            PromptTextField(
+                text: $generation.positivePrompt,
+                isPositivePrompt: true,
+                model: $model
+            )
+            .onChange(of: generation.positivePrompt) { prompt in
+                Settings.shared.prompt = prompt
+            }
+            .padding(.top, 5)
             Spacer()
-            PromptTextField(text: $generation.negativePrompt, isPositivePrompt: false, model: $model)
-                .onChange(of: generation.negativePrompt) { negativePrompt in
-                    Settings.shared.negativePrompt = negativePrompt
-                }
-                .padding(.bottom, 5)
+            PromptTextField(
+                text: $generation.negativePrompt,
+                isPositivePrompt: false,
+                model: $model
+            )
+            .onChange(of: generation.negativePrompt) { negativePrompt in
+                Settings.shared.negativePrompt = negativePrompt
+            }
+            .padding(.bottom, 5)
             Spacer()
         }
         .frame(maxHeight: .infinity)
     }
-    
+
     var body: some View {
         VStack(alignment: .leading) {
-            
+
             Label("Generation Options", systemImage: "gearshape.2")
                 .font(.headline)
                 .fontWeight(.bold)
             Divider()
-            
+
             ScrollView {
                 Group {
                     DisclosureGroup(isExpanded: $disclosedModel) {
@@ -200,16 +245,26 @@ struct ControlsView: View {
                         .onChange(of: model) { selection in
                             guard selection != revealOption else {
                                 // The reveal option has been requested - open the models folder in Finder
-                                NSWorkspace.shared.selectFile(modelFilename, inFileViewerRootedAtPath: PipelineLoader.models.path)
-                                model = Settings.shared.currentModel.modelVersion
+                                NSWorkspace.shared.selectFile(
+                                    modelFilename,
+                                    inFileViewerRootedAtPath: PipelineLoader
+                                        .models.path
+                                )
+                                model =
+                                    Settings.shared.currentModel.modelVersion
                                 return
                             }
-                            guard let model = ModelInfo.from(modelVersion: selection) else { return }
+                            guard
+                                let model = ModelInfo.from(
+                                    modelVersion: selection
+                                )
+                            else { return }
                             modelDidChange(model: model)
                         }
                     } label: {
                         HStack {
-                            Label("Model from Hub", systemImage: "cpu").foregroundColor(.secondary)
+                            Label("Model from Hub", systemImage: "cpu")
+                                .foregroundColor(.secondary)
                             Spacer()
                             if disclosedModel {
                                 Button {
@@ -226,14 +281,15 @@ struct ControlsView: View {
                         }.foregroundColor(.secondary)
                     }
                     Divider()
-                    
+
                     DisclosureGroup(isExpanded: $disclosedPrompt) {
                         Group {
                             prompts()
                         }.padding(.leading, 10)
                     } label: {
                         HStack {
-                            Label("Prompts", systemImage: "text.quote").foregroundColor(.secondary)
+                            Label("Prompts", systemImage: "text.quote")
+                                .foregroundColor(.secondary)
                             Spacer()
                             if disclosedPrompt {
                                 Button {
@@ -243,7 +299,10 @@ struct ControlsView: View {
                                 }
                                 .buttonStyle(.plain)
                                 // Or maybe use .sheet instead
-                                .popover(isPresented: $showPromptsHelp, arrowEdge: .trailing) {
+                                .popover(
+                                    isPresented: $showPromptsHelp,
+                                    arrowEdge: .trailing
+                                ) {
                                     promptsHelp($showPromptsHelp)
                                 }
                             }
@@ -251,16 +310,24 @@ struct ControlsView: View {
                     }
                     Divider()
 
-                    let guidanceScaleValue = generation.guidanceScale.formatted("%.1f")
+                    let guidanceScaleValue = generation.guidanceScale.formatted(
+                        "%.1f"
+                    )
                     DisclosureGroup(isExpanded: $disclosedGuidance) {
-                        CompactSlider(value: $generation.guidanceScale, in: 0...20, step: 0.5)
-                        .onChange(of: generation.guidanceScale) { guidanceScale in
+                        CompactSlider(
+                            value: $generation.guidanceScale,
+                            in: 0...20,
+                            step: 0.5
+                        )
+                        .onChange(of: generation.guidanceScale) {
+                            guidanceScale in
                             Settings.shared.guidanceScale = guidanceScale
                         }
                         .padding(.leading, 10)
                     } label: {
                         HStack {
-                            Label("Guidance Scale", systemImage: "scalemass").foregroundColor(.secondary)
+                            Label("Guidance Scale", systemImage: "scalemass")
+                                .foregroundColor(.secondary)
                             Spacer()
                             if disclosedGuidance {
                                 Button {
@@ -270,7 +337,10 @@ struct ControlsView: View {
                                 }
                                 .buttonStyle(.plain)
                                 // Or maybe use .sheet instead
-                                .popover(isPresented: $showGuidanceHelp, arrowEdge: .trailing) {
+                                .popover(
+                                    isPresented: $showGuidanceHelp,
+                                    arrowEdge: .trailing
+                                ) {
                                     guidanceHelp($showGuidanceHelp)
                                 }
                             } else {
@@ -280,14 +350,21 @@ struct ControlsView: View {
                     }
 
                     DisclosureGroup(isExpanded: $disclosedSteps) {
-                        CompactSlider(value: $generation.steps, in: 1...150, step: 1)
+                        CompactSlider(
+                            value: $generation.steps,
+                            in: 1...150,
+                            step: 1
+                        )
                         .onChange(of: generation.steps) { steps in
                             Settings.shared.stepCount = steps
                         }
                         .padding(.leading, 10)
                     } label: {
                         HStack {
-                            Label("Step count", systemImage: "square.3.layers.3d.down.left").foregroundColor(.secondary)
+                            Label(
+                                "Step count",
+                                systemImage: "square.3.layers.3d.down.left"
+                            ).foregroundColor(.secondary)
                             Spacer()
                             if disclosedSteps {
                                 Button {
@@ -296,7 +373,10 @@ struct ControlsView: View {
                                     Image(systemName: "info.circle")
                                 }
                                 .buttonStyle(.plain)
-                                .popover(isPresented: $showStepsHelp, arrowEdge: .trailing) {
+                                .popover(
+                                    isPresented: $showStepsHelp,
+                                    arrowEdge: .trailing
+                                ) {
                                     stepsHelp($showStepsHelp)
                                 }
                             } else {
@@ -306,14 +386,19 @@ struct ControlsView: View {
                     }
 
                     DisclosureGroup(isExpanded: $disclosedPreview) {
-                        CompactSlider(value: $generation.previews, in: 0...25, step: 1)
+                        CompactSlider(
+                            value: $generation.previews,
+                            in: 0...25,
+                            step: 1
+                        )
                         .onChange(of: generation.previews) { previews in
                             Settings.shared.previewCount = previews
                         }
                         .padding(.leading, 10)
                     } label: {
                         HStack {
-                            Label("Preview count", systemImage: "eye.square").foregroundColor(.secondary)
+                            Label("Preview count", systemImage: "eye.square")
+                                .foregroundColor(.secondary)
                             Spacer()
                             if disclosedPreview {
                                 Button {
@@ -322,7 +407,10 @@ struct ControlsView: View {
                                     Image(systemName: "info.circle")
                                 }
                                 .buttonStyle(.plain)
-                                .popover(isPresented: $showPreviewHelp, arrowEdge: .trailing) {
+                                .popover(
+                                    isPresented: $showPreviewHelp,
+                                    arrowEdge: .trailing
+                                ) {
                                     previewHelp($showPreviewHelp)
                                 }
                             } else {
@@ -336,7 +424,8 @@ struct ControlsView: View {
                             .padding(.leading, 10)
                     } label: {
                         HStack {
-                            Label(textFieldLabelSeed, systemImage: "leaf").foregroundColor(.secondary)
+                            Label(textFieldLabelSeed, systemImage: "leaf")
+                                .foregroundColor(.secondary)
                             Spacer()
                             if disclosedSeed {
                                 Button {
@@ -345,11 +434,18 @@ struct ControlsView: View {
                                     Image(systemName: "info.circle")
                                 }
                                 .buttonStyle(.plain)
-                                .popover(isPresented: $showSeedHelp, arrowEdge: .trailing) {
+                                .popover(
+                                    isPresented: $showSeedHelp,
+                                    arrowEdge: .trailing
+                                ) {
                                     seedHelp($showSeedHelp)
                                 }
                             } else {
-                                Text(generation.seed.formatted(.number.grouping(.never)))
+                                Text(
+                                    generation.seed.formatted(
+                                        .number.grouping(.never)
+                                    )
+                                )
                             }
                         }
                         .foregroundColor(.secondary)
@@ -357,40 +453,73 @@ struct ControlsView: View {
 
                     if Capabilities.hasANE {
                         Divider()
-                        let isNeuralEngineDisabled = !(ModelInfo.from(modelVersion: model)?.supportsNeuralEngine ?? true)
+                        let isNeuralEngineDisabled =
+                            !(ModelInfo.from(modelVersion: model)?
+                            .supportsNeuralEngine ?? true)
                         DisclosureGroup(isExpanded: $disclosedAdvanced) {
                             HStack {
-                                Picker(selection: $generation.computeUnits, label: Text("Use")) {
+                                Picker(
+                                    selection: $generation.computeUnits,
+                                    label: Text("Use")
+                                ) {
                                     Text("GPU").tag(ComputeUnits.cpuAndGPU)
-                                    Text("Neural Engine\(isNeuralEngineDisabled ? " (unavailable)" : "")")
-                                        .foregroundColor(isNeuralEngineDisabled ? .secondary : .primary)
-                                        .tag(ComputeUnits.cpuAndNeuralEngine)
-                                    Text("GPU and Neural Engine").tag(ComputeUnits.all)
+                                    Text(
+                                        "Neural Engine\(isNeuralEngineDisabled ? " (unavailable)" : "")"
+                                    )
+                                    .foregroundColor(
+                                        isNeuralEngineDisabled
+                                            ? .secondary : .primary
+                                    )
+                                    .tag(ComputeUnits.cpuAndNeuralEngine)
+                                    Text("GPU and Neural Engine").tag(
+                                        ComputeUnits.all
+                                    )
                                 }.pickerStyle(.radioGroup).padding(.leading)
                                 Spacer()
                             }
                             .onChange(of: generation.computeUnits) { units in
-                                guard let currentModel = ModelInfo.from(modelVersion: model) else { return }
-                                if isNeuralEngineDisabled && units == .cpuAndNeuralEngine {
+                                guard
+                                    let currentModel = ModelInfo.from(
+                                        modelVersion: model
+                                    )
+                                else { return }
+                                if isNeuralEngineDisabled
+                                    && units == .cpuAndNeuralEngine
+                                {
                                     resetComputeUnitsState()
                                     return
                                 }
-                                let variantDownloaded = isModelDownloaded(currentModel, computeUnits: units)
+                                let variantDownloaded = isModelDownloaded(
+                                    currentModel,
+                                    computeUnits: units
+                                )
                                 if variantDownloaded {
                                     updateComputeUnitsState()
                                 } else {
                                     mustShowModelDownloadDisclaimer.toggle()
                                 }
                             }
-                            .alert("Download Required", isPresented: $mustShowModelDownloadDisclaimer, actions: {
-                                Button("Cancel", role: .destructive) { resetComputeUnitsState() }
-                                Button("Download", role: .cancel) { updateComputeUnitsState() }
-                            }, message: {
-                                Text("This setting requires a new version of the selected model.")
-                            })
+                            .alert(
+                                "Download Required",
+                                isPresented: $mustShowModelDownloadDisclaimer,
+                                actions: {
+                                    Button("Cancel", role: .destructive) {
+                                        resetComputeUnitsState()
+                                    }
+                                    Button("Download", role: .cancel) {
+                                        updateComputeUnitsState()
+                                    }
+                                },
+                                message: {
+                                    Text(
+                                        "This setting requires a new version of the selected model."
+                                    )
+                                }
+                            )
                         } label: {
                             HStack {
-                                Label("Advanced", systemImage: "terminal").foregroundColor(.secondary)
+                                Label("Advanced", systemImage: "terminal")
+                                    .foregroundColor(.secondary)
                                 Spacer()
                                 if disclosedAdvanced {
                                     Button {
@@ -399,7 +528,10 @@ struct ControlsView: View {
                                         Image(systemName: "info.circle")
                                     }
                                     .buttonStyle(.plain)
-                                    .popover(isPresented: $showAdvancedHelp, arrowEdge: .trailing) {
+                                    .popover(
+                                        isPresented: $showAdvancedHelp,
+                                        arrowEdge: .trailing
+                                    ) {
                                         advancedHelp($showAdvancedHelp)
                                     }
                                 }
@@ -409,41 +541,48 @@ struct ControlsView: View {
                 }
             }
             .disclosureGroupStyle(LabelToggleDisclosureGroupStyle())
-            
-            Toggle("Disable Safety Checker", isOn: $generation.disableSafety).onChange(of: generation.disableSafety) { value in
-                updateSafetyCheckerState()
-            }
+
+            Toggle("Disable Safety Checker", isOn: $generation.disableSafety)
+                .onChange(of: generation.disableSafety) { value in
+                    updateSafetyCheckerState()
+                }
                 .popover(isPresented: $mustShowSafetyCheckerDisclaimer) {
-                        VStack {
-                            Text("You have disabled the safety checker").font(.title).padding(.top)
-                            Text("""
-                                 Please, ensure that you abide \
-                                 by the conditions of the Stable Diffusion license and do not expose \
-                                 unfiltered results to the public.
-                                 """)
-                            .lineLimit(nil)
-                            .padding(.all, 5)
-                            Button {
-                                Settings.shared.safetyCheckerDisclaimerShown = true
-                                updateSafetyCheckerState()
-                            } label: {
-                                Text("I Accept").frame(maxWidth: 200)
-                            }
-                            .padding(.bottom)
+                    VStack {
+                        Text("You have disabled the safety checker").font(
+                            .title
+                        ).padding(.top)
+                        Text(
+                            """
+                            Please, ensure that you abide \
+                            by the conditions of the Stable Diffusion license and do not expose \
+                            unfiltered results to the public.
+                            """
+                        )
+                        .lineLimit(nil)
+                        .padding(.all, 5)
+                        Button {
+                            Settings.shared.safetyCheckerDisclaimerShown = true
+                            updateSafetyCheckerState()
+                        } label: {
+                            Text("I Accept").frame(maxWidth: 200)
                         }
-                        .frame(minWidth: 400, idealWidth: 400, maxWidth: 400)
-                        .fixedSize()
+                        .padding(.bottom)
                     }
+                    .frame(minWidth: 400, idealWidth: 400, maxWidth: 400)
+                    .fixedSize()
+                }
             Divider()
-            
+
             StatusView(pipelineState: $pipelineState)
         }
         .padding()
         .onAppear {
-            modelDidChange(model: ModelInfo.from(modelVersion: model) ?? ModelInfo.v2Base)
+            modelDidChange(
+                model: ModelInfo.from(modelVersion: model) ?? ModelInfo.v2Base
+            )
         }
     }
-    
+
     fileprivate func discloseSeedContent() -> some View {
         let seedBinding = Binding<String>(
             get: {
@@ -459,19 +598,22 @@ struct ControlsView: View {
                 }
             }
         )
-        
+
         return HStack {
             TextField("", text: seedBinding)
                 .multilineTextAlignment(.trailing)
-                .onChange(of: seedBinding.wrappedValue, perform: { newValue in
-                    if let seed = UInt32(newValue) {
-                        generation.seed = seed
-                        Settings.shared.seed = seed
-                    } else {
-                        generation.seed = 0
-                        Settings.shared.seed = 0
+                .onChange(
+                    of: seedBinding.wrappedValue,
+                    perform: { newValue in
+                        if let seed = UInt32(newValue) {
+                            generation.seed = seed
+                            Settings.shared.seed = seed
+                        } else {
+                            generation.seed = 0
+                            Settings.shared.seed = 0
+                        }
                     }
-                })
+                )
                 .onReceive(Just(seedBinding.wrappedValue)) { newValue in
                     let filtered = newValue.filter { "0123456789".contains($0) }
                     if filtered != newValue {
