@@ -27,7 +27,7 @@ struct PromptTextField: View {
     private var modelInfo: ModelInfo? {
         ModelInfo.from(modelVersion: $model.wrappedValue)
     }
-    
+
     private var pipelineLoader: PipelineLoader? {
         guard let modelInfo = modelInfo else { return nil }
         return PipelineLoader(model: modelInfo)
@@ -36,7 +36,7 @@ struct PromptTextField: View {
     private var compiledURL: URL? {
         return pipelineLoader?.compiledURL
     }
-    
+
     private var textColor: Color {
         switch tokenCount {
         case 0...65:
@@ -47,14 +47,14 @@ struct PromptTextField: View {
             return .red
         }
     }
-    
+
     // macOS initializer
     init(text: Binding<String>, isPositivePrompt: Bool, model: Binding<String>) {
          _textBinding = text
          self.isPositivePrompt = isPositivePrompt
         _model = model
     }
-    
+
     // iOS initializer
     init(text: Binding<String>, isPositivePrompt: Bool, model: String) {
         _textBinding = text
@@ -106,7 +106,7 @@ struct PromptTextField: View {
             .font(.caption)
             #endif
         }
-        .onChange(of: model) { model in
+        .onChange(of: model) {
             updateTokenCount(newText: textBinding)
         }
         .onAppear {

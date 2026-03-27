@@ -189,40 +189,40 @@ struct ControlsView: View {
     }
 
     fileprivate func modelLabel(_ model: ModelInfo) -> Text {
-        let downloaded = isModelDownloaded(model)
-        let prefix = downloaded ? "● " : "◌ "  //"○ "
-        logger.debug("Prefix: \(prefix)")
-        return Text(prefix).foregroundColor(
-            downloaded ? .accentColor : .secondary
-        ) + Text(model.modelVersion)
-    }
+    let downloaded = isModelDownloaded(model)
+    let prefix = downloaded ? "● " : "◌ "
+    logger.debug("Prefix: \(prefix)")
+    return Text("\(prefix)\(model.modelVersion)").foregroundColor(
+        downloaded ? .accentColor : .secondary
+    )
+}
 
     fileprivate func prompts() -> some View {
-        VStack {
-            Spacer()
-            PromptTextField(
-                text: $generation.positivePrompt,
-                isPositivePrompt: true,
-                model: $model
-            )
-            .onChange(of: generation.positivePrompt) { prompt in
-                Settings.shared.prompt = prompt
-            }
-            .padding(.top, 5)
-            Spacer()
-            PromptTextField(
-                text: $generation.negativePrompt,
-                isPositivePrompt: false,
-                model: $model
-            )
-            .onChange(of: generation.negativePrompt) { negativePrompt in
-                Settings.shared.negativePrompt = negativePrompt
-            }
-            .padding(.bottom, 5)
-            Spacer()
+    VStack {
+        Spacer()
+        PromptTextField(
+            text: $generation.positivePrompt,
+            isPositivePrompt: true,
+            model: $model
+        )
+        .onChange(of: generation.positivePrompt) { _, newValue in
+            Settings.shared.prompt = newValue
         }
-        .frame(maxHeight: .infinity)
+        .padding(.top, 5)
+        Spacer()
+        PromptTextField(
+            text: $generation.negativePrompt,
+            isPositivePrompt: false,
+            model: $model
+        )
+        .onChange(of: generation.negativePrompt) { _, newValue in
+            Settings.shared.negativePrompt = newValue
+        }
+        .padding(.bottom, 5)
+        Spacer()
     }
+    .frame(maxHeight: .infinity)
+}
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -242,7 +242,7 @@ struct ControlsView: View {
                             }
                             Text("Reveal in Finder…").tag(revealOption)
                         }
-                        .onChange(of: model) { selection in
+                        .onChange(of: model) { _, selection in
                             guard selection != revealOption else {
                                 // The reveal option has been requested - open the models folder in Finder
                                 NSWorkspace.shared.selectFile(
@@ -320,8 +320,7 @@ struct ControlsView: View {
                             step: 0.5
                         )
                         .onChange(of: generation.guidanceScale) {
-                            guidanceScale in
-                            Settings.shared.guidanceScale = guidanceScale
+                            Settings.shared.guidanceScale = generation.guidanceScale
                         }
                         .padding(.leading, 10)
                     } label: {
@@ -355,7 +354,7 @@ struct ControlsView: View {
                             in: 1...150,
                             step: 1
                         )
-                        .onChange(of: generation.steps) { steps in
+                        .onChange(of: generation.steps) { _, steps in
                             Settings.shared.stepCount = steps
                         }
                         .padding(.leading, 10)
@@ -391,7 +390,7 @@ struct ControlsView: View {
                             in: 0...25,
                             step: 1
                         )
-                        .onChange(of: generation.previews) { previews in
+                        .onChange(of: generation.previews) { _, previews in
                             Settings.shared.previewCount = previews
                         }
                         .padding(.leading, 10)
@@ -477,7 +476,7 @@ struct ControlsView: View {
                                 }.pickerStyle(.radioGroup).padding(.leading)
                                 Spacer()
                             }
-                            .onChange(of: generation.computeUnits) { units in
+                            .onChange(of: generation.computeUnits) { _, units in
                                 guard
                                     let currentModel = ModelInfo.from(
                                         modelVersion: model
@@ -543,7 +542,7 @@ struct ControlsView: View {
             .disclosureGroupStyle(LabelToggleDisclosureGroupStyle())
 
             Toggle("Disable Safety Checker", isOn: $generation.disableSafety)
-                .onChange(of: generation.disableSafety) { value in
+                .onChange(of: generation.disableSafety) { _, value in
                     updateSafetyCheckerState()
                 }
                 .popover(isPresented: $mustShowSafetyCheckerDisclaimer) {
@@ -602,18 +601,15 @@ struct ControlsView: View {
         return HStack {
             TextField("", text: seedBinding)
                 .multilineTextAlignment(.trailing)
-                .onChange(
-                    of: seedBinding.wrappedValue,
-                    perform: { newValue in
-                        if let seed = UInt32(newValue) {
-                            generation.seed = seed
-                            Settings.shared.seed = seed
-                        } else {
-                            generation.seed = 0
-                            Settings.shared.seed = 0
-                        }
+                .onChange(of: seedBinding.wrappedValue) {_, newValue in
+                    if let seed = UInt32(newValue) {
+                        generation.seed = seed
+                        Settings.shared.seed = seed
+                    } else {
+                        generation.seed = 0
+                        Settings.shared.seed = 0
                     }
-                )
+                }
                 .onReceive(Just(seedBinding.wrappedValue)) { newValue in
                     let filtered = newValue.filter { "0123456789".contains($0) }
                     if filtered != newValue {
