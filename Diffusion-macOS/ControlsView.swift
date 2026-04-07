@@ -191,7 +191,6 @@ struct ControlsView: View {
     fileprivate func modelLabel(_ model: ModelInfo) -> Text {
     let downloaded = isModelDownloaded(model)
     let prefix = downloaded ? "● " : "◌ "
-    logger.debug("Prefix: \(prefix)")
     return Text("\(prefix)\(model.modelVersion)").foregroundColor(
         downloaded ? .accentColor : .secondary
     )

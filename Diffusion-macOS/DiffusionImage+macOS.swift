@@ -9,7 +9,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 import OSLog
 
-private let logger = Logger(subsystem: "com.huggingface.diffusion", category: "DiffusionImage")
+private let logger = Logger(subsystem: "co.huggingface.diffusion", category: "DiffusionImage")
 extension DiffusionImage {
     
     /// Instance func to place the generated image on the file system and return the `fileURL` where it is stored.

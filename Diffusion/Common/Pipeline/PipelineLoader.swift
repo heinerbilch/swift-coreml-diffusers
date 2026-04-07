@@ -6,14 +6,16 @@
 //  See LICENSE at https://github.com/huggingface/swift-coreml-diffusers/LICENSE
 //
 
-import CoreML
 import Combine
-
-import ZIPFoundation
-import StableDiffusion
+import CoreML
 import OSLog
+import StableDiffusion
+import ZIPFoundation
 
-private var logger = Logger(subsystem: "co.hugginface.diffusers", category: "PipelineLoader")
+private var logger = Logger(
+    subsystem: "co.hugginface.diffusers",
+    category: "PipelineLoader"
+)
 class PipelineLoader {
     static let models = URL.init(filePath: "/Volumes/Vol2/models")
     let model: ModelInfo
@@ -22,7 +24,11 @@ class PipelineLoader {
 
     private var downloadSubscriber: Cancellable?
 
-    init(model: ModelInfo, computeUnits: ComputeUnits? = nil, maxSeed: UInt32 = UInt32.max) {
+    init(
+        model: ModelInfo,
+        computeUnits: ComputeUnits? = nil,
+        maxSeed: UInt32 = UInt32.max
+    ) {
         self.model = model
         self.computeUnits = computeUnits ?? model.defaultComputeUnits
         self.maxSeed = maxSeed
@@ -46,7 +52,9 @@ class PipelineLoader {
             statePublisher.value = state
         }
     }
-    private(set) lazy var statePublisher: CurrentValueSubject<PipelinePreparationPhase, Never> = CurrentValueSubject(state)
+    private(set) lazy var statePublisher:
+        CurrentValueSubject<PipelinePreparationPhase, Never> =
+            CurrentValueSubject(state)
     private(set) var downloader: Downloader? = nil
 
     func setInitialState() {
@@ -73,10 +81,18 @@ extension PipelineLoader {
     var filename: String {
         return url.lastPathComponent
     }
-    var downloadedURL: URL { PipelineLoader.models.appendingPathComponent(filename) }
+    var downloadedURL: URL {
+        PipelineLoader.models.appendingPathComponent(filename)
+    }
     var uncompressURL: URL { PipelineLoader.models }
-    var packagesFilename: String { (filename as NSString).deletingPathExtension }
-    var compiledURL: URL { downloadedURL.deletingLastPathComponent().appendingPathComponent(packagesFilename)  }
+    var packagesFilename: String {
+        (filename as NSString).deletingPathExtension
+    }
+    var compiledURL: URL {
+        downloadedURL.deletingLastPathComponent().appendingPathComponent(
+            packagesFilename
+        )
+    }
     var downloaded: Bool {
         return FileManager.default.fileExists(atPath: downloadedURL.path)
     }
@@ -85,10 +101,11 @@ extension PipelineLoader {
     }
     var variant: AttentionVariant {
         switch computeUnits {
-        case .cpuOnly           : return .original          // Not supported yet
-        case .cpuAndGPU         : return .original
-        case .cpuAndNeuralEngine: return model.supportsAttentionV2 ? .splitEinsumV2 : .splitEinsum
-        case .all               : return model.isSD3 ? .original : .splitEinsum
+        case .cpuOnly: return .original  // Not supported yet
+        case .cpuAndGPU: return .original
+        case .cpuAndNeuralEngine:
+            return model.supportsAttentionV2 ? .splitEinsumV2 : .splitEinsum
+        case .all: return model.isSD3 ? .original : .splitEinsum
         @unknown default:
             fatalError("Unknown MLComputeUnits")
         }
@@ -97,15 +114,25 @@ extension PipelineLoader {
     func prepare() async throws -> Pipeline {
         do {
             do {
-                try FileManager.default.createDirectory(atPath: PipelineLoader.models.path, withIntermediateDirectories: true, attributes: nil)
-                logger.debug("Created PipelineLoader.models directory \(PipelineLoader.models.path)")
+                try FileManager.default.createDirectory(
+                    atPath: PipelineLoader.models.path,
+                    withIntermediateDirectories: true,
+                    attributes: nil
+                )
+                logger.debug(
+                    "Created PipelineLoader.models directory \(PipelineLoader.models.path)"
+                )
             } catch {
-                logger.warning("Error creating PipelineLoader.models path: \(error)")
+                logger.warning(
+                    "Error creating PipelineLoader.models path: \(error)"
+                )
             }
             try await download()
             try await unzip()
             let pipeline = try await load(url: compiledURL)
-            logger.debug("Pipeline loaded successfully from \(self.compiledURL.path)")
+            logger.debug(
+                "Pipeline loaded successfully from \(self.compiledURL.path)"
+            )
             return Pipeline(pipeline, maxSeed: maxSeed)
         } catch {
             state = .failed(error)
@@ -149,11 +176,14 @@ extension PipelineLoader {
         configuration.computeUnits = computeUnits
         logger.debug("Configuration: \(configuration)")
         let pipeline: StableDiffusionPipelineProtocol
+        
         if model.isXL {
             if #available(macOS 14.0, iOS 17.0, *) {
-                pipeline = try StableDiffusionXLPipeline(resourcesAt: url,
-                                                         configuration: configuration,
-                                                         reduceMemory: model.reduceMemory)
+                pipeline = try StableDiffusionXLPipeline(
+                    resourcesAt: url,
+                    configuration: configuration,
+                    reduceMemory: model.reduceMemory
+                )
             } else {
                 logger.warning("Stable Diffusion XL requires macOS 14")
                 throw "Stable Diffusion XL requires macOS 14"
@@ -161,23 +191,28 @@ extension PipelineLoader {
 
         } else if model.isSD3 {
             if #available(macOS 14.0, iOS 17.0, *) {
-                pipeline = try StableDiffusion3Pipeline(resourcesAt: url,
-                                                        configuration: configuration,
-                                                        reduceMemory: model.reduceMemory)
+                pipeline = try StableDiffusion3Pipeline(
+                    resourcesAt: url,
+                    configuration: configuration,
+                    reduceMemory: model.reduceMemory
+                )
             } else {
                 logger.warning("Stable Diffusion 3 requires macOS 14")
                 throw "Stable Diffusion 3 requires macOS 14"
             }
         } else {
-            pipeline = try StableDiffusionPipeline(resourcesAt: url,
-                                                       controlNet: [],
-                                                       configuration: configuration,
-                                                       disableSafety: false,
-                                                       reduceMemory: model.reduceMemory)
+            pipeline = try StableDiffusionPipeline(
+                resourcesAt: url,
+                controlNet: [],
+                configuration: configuration,
+                disableSafety: false,
+                reduceMemory: model.reduceMemory
+            )
+            logger.debug("Loaded Stable Diffusion pipeline at: \(url)")
         }
         try pipeline.loadResources()
         state = .loaded
-        logger.info("Pipeline loaded in \(Date().timeIntervalSince(beginDate))")
+        logger.info("Pipeline loaded in \(Date().timeIntervalSince(beginDate)) from \(url)")
         return pipeline
     }
 }

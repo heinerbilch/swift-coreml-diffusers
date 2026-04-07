@@ -117,7 +117,6 @@ struct ContentView: View {
             let prompt = DEFAULT_PROMPT
             let cgImage = NSImage(imageLiteralResourceName: "placeholder")
                 .cgImage(forProposedRect: nil, context: nil, hints: nil)!
-            logger.info("Sharing default \(prompt)")
             return ShareButtons(image: cgImage, name: prompt)
         }
     }
